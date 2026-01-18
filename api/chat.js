@@ -1,9 +1,5 @@
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
-
 const SYSTEM_PROMPT = `You are a friendly and helpful assistant for The Landings Golf Course in Kingston, Ontario. You help visitors learn about the 2026 Indoor Winter Instructional Program and guide them toward registration.
 
 ## Program Details
@@ -63,6 +59,11 @@ export default async function handler(req, res) {
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });
     }
+
+    // Initialize OpenAI client at runtime to ensure env vars are available
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    });
 
     // Build conversation history for OpenAI
     const messages = [

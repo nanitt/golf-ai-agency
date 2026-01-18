@@ -1,21 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 const BLOCK_LABELS = {
   block1: 'Block 1: January 12 - February 15, 2026',
   block2: 'Block 2: February 16 - March 22, 2026',
   both: 'Both Blocks',
   undecided: 'Not Sure Yet'
 };
-
-const NOTIFICATION_EMAIL = process.env.NOTIFICATION_EMAIL || 'natemaclennan@outlook.com';
 
 export default async function handler(req, res) {
   // CORS headers
@@ -32,6 +23,14 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Initialize clients at runtime to ensure env vars are available
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_KEY
+    );
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const NOTIFICATION_EMAIL = process.env.NOTIFICATION_EMAIL || 'natemaclennan@outlook.com';
+
     const { name, email, block, conversationId, messages } = req.body;
 
     // Validation

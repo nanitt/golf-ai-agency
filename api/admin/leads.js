@@ -1,13 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
-
-// Simple admin key for basic protection
-const ADMIN_KEY = process.env.ADMIN_KEY || 'landings2026';
-
 export default async function handler(req, res) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -22,6 +14,9 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Initialize at runtime
+  const ADMIN_KEY = process.env.ADMIN_KEY || 'landings2026';
+
   // Basic auth check
   const authHeader = req.headers.authorization;
   const providedKey = authHeader?.replace('Bearer ', '');
@@ -31,6 +26,11 @@ export default async function handler(req, res) {
   }
 
   try {
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_KEY
+    );
+
     const { data: leads, error } = await supabase
       .from('landings_leads')
       .select('*')
