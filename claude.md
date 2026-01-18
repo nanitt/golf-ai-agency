@@ -10,8 +10,14 @@ Lead-generation chatbot for The Landings Golf Course (Kingston) to capture regis
 |-------|-------|----------|
 | Block 1 | January 12 - February 15, 2026 | 5 weeks |
 | Block 2 | February 16 - March 22, 2026 | 5 weeks |
+| Full Program | January 12 - March 22, 2026 | 10 weeks |
 
-**Instructors:** Chris Barber (Head Pro), Michael Beneteau, Maddy Barber
+**Pricing:**
+- Full 10-Week: $695 adult / $549 junior
+- Block 1: $379 adult / $289 junior
+- Block 2: $439 adult / $359 junior
+
+**Instructors:** Chris Barber (Head Pro, PGA of Canada), Michael Beneteau (TPI Certified), Maddy Barber (PGA of Canada)
 **Follow-up:** Chris contacts registrants directly
 
 ## Tech Stack
@@ -19,19 +25,19 @@ Lead-generation chatbot for The Landings Golf Course (Kingston) to capture regis
 - **Backend:** Vercel serverless functions (`api/`)
 - **AI:** OpenAI GPT-4o-mini
 - **Database:** Supabase (`landings_leads` table)
-- **Email:** Resend (notifications to natemaclennan@outlook.com, later Chris)
+- **Email:** Resend (notifications@golfagency.ca)
 - **Hosting:** Vercel (free tier)
 
 ## Project Structure
 ```
 /Users/natemaclennan/projects/golf-ai-agency/
-├── index.html              # Demo landing page
-├── admin.html              # Lead dashboard (access at /admin.html)
+├── index.html              # Demo landing page (with pricing, FAQ, facilities, hours)
+├── admin.html              # Lead dashboard (with search, filter, export, status update)
 ├── public/widget.js        # Embeddable chat widget (no secrets)
 ├── api/
 │   ├── chat.js             # OpenAI proxy - POST /api/chat
-│   ├── leads.js            # Lead capture - POST /api/leads
-│   └── admin/leads.js      # Admin API - GET /api/admin/leads
+│   ├── leads.js            # Lead capture - POST /api/leads (with validation)
+│   └── admin/leads.js      # Admin API - GET/PATCH /api/admin/leads
 ├── lib/
 │   ├── openai.js           # OpenAI client
 │   ├── supabase.js         # Supabase client
@@ -64,15 +70,22 @@ CREATE TABLE landings_leads (
   conversation_history JSONB,
   source TEXT DEFAULT 'chatbot',
   status TEXT DEFAULT 'new',
+  notes TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE INDEX idx_landings_leads_created_at ON landings_leads(created_at DESC);
 CREATE INDEX idx_landings_leads_status ON landings_leads(status);
+CREATE INDEX idx_landings_leads_email ON landings_leads(email);
 ALTER TABLE landings_leads ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Service role can do everything" ON landings_leads
   FOR ALL USING (true) WITH CHECK (true);
+```
+
+**Note:** Run this to add notes column if table already exists:
+```sql
+ALTER TABLE landings_leads ADD COLUMN IF NOT EXISTS notes TEXT;
 ```
 
 ## Deployment Status
@@ -82,8 +95,18 @@ CREATE POLICY "Service role can do everything" ON landings_leads
 - [x] Deployed to Vercel
 - [x] Environment variables added to Vercel
 - [x] Tested chat functionality
-- [ ] Tested lead capture (form submission)
-- [ ] Tested email notifications
+- [x] Lead capture with validation
+- [x] Duplicate email prevention
+- [x] Email notifications (navy/gold branding)
+- [x] Admin status updates (PATCH endpoint)
+- [x] Admin search/filter functionality
+- [x] Admin CSV export
+- [x] Lead detail modal with conversation history
+- [x] Landing page: Pricing section
+- [x] Landing page: Facilities section
+- [x] Landing page: FAQ accordion
+- [x] Landing page: Hours of operation
+- [x] Full 10-week option in widget
 
 ## Live URLs
 - **Demo Site:** https://golf-ai-agency.vercel.app
@@ -100,8 +123,56 @@ CREATE POLICY "Service role can do everything" ON landings_leads
 
 ## API Endpoints
 - `POST /api/chat` - Send message, get AI response
-- `POST /api/leads` - Submit lead (name, email, block)
-- `GET /api/admin/leads` - Get all leads (requires Authorization header)
+- `POST /api/leads` - Submit lead (name, email, block) with validation
+- `GET /api/admin/leads` - Get all leads with optional filters (?search=&status=&block=&from=&to=)
+- `PATCH /api/admin/leads` - Update lead status or notes (body: {id, status?, notes?})
+
+## Block Preference Values
+- `full` - Full 10-Week Program (Best Value)
+- `block1` - Block 1 only
+- `block2` - Block 2 only
+- `both` - Both blocks
+- `undecided` - Not sure yet
+
+## Lead Statuses
+- `new` - Just registered, not contacted
+- `contacted` - Chris has reached out
+- `converted` - Paid and enrolled
+- `archived` - No longer active
+
+## Features Implemented (Demo Prep - Jan 17, 2026)
+
+### Lead Capture (api/leads.js)
+- Email validation
+- Block preference validation (block1, block2, both, full, undecided)
+- Duplicate email prevention with friendly message
+- Navy/gold branded email notifications
+- Email from: notifications@golfagency.ca
+
+### Admin Dashboard (admin.html)
+- Navy/gold branding consistent with landing page
+- Search by name or email (with debounce)
+- Filter by status, block preference, date range
+- Status dropdown in table rows for quick updates
+- Lead detail modal with:
+  - Contact information
+  - Status update
+  - Notes field (saved to database)
+  - Full conversation history
+- CSV export of filtered leads
+- Stats: Total, This Week, Block 1/2, New, Conversion Rate
+
+### Landing Page (index.html)
+- Pricing section with all options (full, block 1, block 2)
+- Facilities section (ForeSight, simulator, unlimited practice, TPI)
+- Hours of operation for both blocks
+- FAQ accordion with common questions
+- Enhanced instructor cards with credentials and bios
+
+### Widget (public/widget.js)
+- Full 10-week program option added
+- Engaging welcome message mentioning limited spots
+- Graceful handling of duplicate email submissions
 
 ## Related Projects
 - **Celtic Golf Kingston:** celticgolfkingston.ca - Full booking platform (Next.js, Supabase, Resend, Twilio)
@@ -111,3 +182,4 @@ CREATE POLICY "Service role can do everything" ON landings_leads
 - All API keys stay server-side only
 - Admin dashboard uses simple key auth (ADMIN_KEY)
 - Email from address: notifications@golfagency.ca (configure in Resend)
+- Hours: Closed Fridays for maintenance

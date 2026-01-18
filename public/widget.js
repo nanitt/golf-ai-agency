@@ -486,7 +486,8 @@
           <input type="text" id="landings-lead-name" placeholder="Your name" required>
           <input type="email" id="landings-lead-email" placeholder="Email address" required>
           <select id="landings-lead-block">
-            <option value="">Select a block...</option>
+            <option value="">Select your preference...</option>
+            <option value="full">Full 10-Week Program (Best Value)</option>
             <option value="block1">Block 1: Jan 12 - Feb 15, 2026</option>
             <option value="block2">Block 2: Feb 16 - Mar 22, 2026</option>
             <option value="both">Both Blocks</option>
@@ -607,16 +608,27 @@
         })
       });
 
-      if (!response.ok) throw new Error('Failed to submit');
+      const data = await response.json();
 
-      // Hide form and show thank you message
+      // Hide form
       document.getElementById('landings-lead-form').style.display = 'none';
       document.getElementById('landings-input-container').style.display = 'flex';
 
-      messages.push({
-        role: 'bot',
-        content: `Thank you, ${name}! Your registration interest has been received. Chris Barber will be in touch with you shortly at ${email} to confirm your spot and provide payment details. We're excited to have you join us this winter!`
-      });
+      if (response.status === 409 && data.error === 'duplicate_email') {
+        // Duplicate email - show friendly message
+        messages.push({
+          role: 'bot',
+          content: data.message || `It looks like ${email} is already registered. Chris will be in touch soon!`
+        });
+      } else if (!response.ok) {
+        throw new Error('Failed to submit');
+      } else {
+        // Success
+        messages.push({
+          role: 'bot',
+          content: `Thank you, ${name}! Your registration interest has been received. Chris Barber will be in touch with you shortly at ${email} to confirm your spot and provide payment details. We're excited to have you join us this winter!`
+        });
+      }
       renderMessages();
 
     } catch (error) {
@@ -643,7 +655,7 @@
         conversationId = generateId();
         messages.push({
           role: 'bot',
-          content: "Welcome to The Landings Golf Course! I'm here to help you learn about our 2026 Indoor Winter Instructional Program. What would you like to know?"
+          content: "Hey there! Welcome to The Landings Golf Course. Our 2026 Indoor Winter Program is filling up fast - spots are limited! I can tell you about the schedule, pricing, instructors, or help you register your interest. What would you like to know?"
         });
         renderMessages();
       }
