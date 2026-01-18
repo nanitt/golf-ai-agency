@@ -62,7 +62,9 @@ export default async function handler(req, res) {
 
     // Initialize OpenAI client at runtime to ensure env vars are available
     const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
+      apiKey: process.env.OPENAI_API_KEY,
+      timeout: 30000, // 30 second timeout
+      maxRetries: 2
     });
 
     // Build conversation history for OpenAI
@@ -100,7 +102,9 @@ export default async function handler(req, res) {
     return res.status(500).json({
       error: 'Failed to process message',
       details: error.message,
-      hasApiKey: !!process.env.OPENAI_API_KEY
+      errorType: error.constructor.name,
+      hasApiKey: !!process.env.OPENAI_API_KEY,
+      keyPrefix: process.env.OPENAI_API_KEY?.substring(0, 10)
     });
   }
 }
