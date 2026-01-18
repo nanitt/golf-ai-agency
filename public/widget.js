@@ -1,14 +1,16 @@
 (function() {
   'use strict';
 
-  // Configuration
+  // Configuration - The Landings Brand Colors
   const CONFIG = {
     apiBase: window.LANDINGS_API_BASE || '',
-    primaryColor: '#1a472a',
-    primaryDark: '#0f2a1a',
-    primaryLight: '#2d5a3d',
-    accentColor: '#d4b843',
-    grayLight: '#f3f4f6',
+    primaryColor: '#093658',    // Navy
+    primaryDark: '#0e2a42',     // Dark Navy
+    primaryLight: '#103c5d',    // Navy 700
+    accentColor: '#DBCDA5',     // Gold
+    ctaColor: '#63a71b',        // Green CTA
+    cream: '#F5F0E4',           // Cream background
+    grayLight: '#F5F0E4',       // Use cream for light backgrounds
     grayMedium: '#9ca3af',
     grayDark: '#374151'
   };
@@ -25,7 +27,7 @@
     style.textContent = `
       .landings-widget-container * {
         box-sizing: border-box;
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         -webkit-font-smoothing: antialiased;
       }
 
@@ -39,7 +41,7 @@
         background: linear-gradient(135deg, ${CONFIG.primaryColor} 0%, ${CONFIG.primaryLight} 100%);
         border: none;
         cursor: pointer;
-        box-shadow: 0 4px 20px rgba(26, 71, 42, 0.35);
+        box-shadow: 0 4px 20px rgba(9, 54, 88, 0.35);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -70,7 +72,7 @@
 
       .landings-chat-button:hover {
         transform: scale(1.05);
-        box-shadow: 0 6px 24px rgba(26, 71, 42, 0.45);
+        box-shadow: 0 6px 24px rgba(9, 54, 88, 0.45);
       }
 
       .landings-chat-button svg {
@@ -182,9 +184,9 @@
         content: '';
         width: 8px;
         height: 8px;
-        background: #4ade80;
+        background: ${CONFIG.accentColor};
         border-radius: 50%;
-        box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.3);
+        box-shadow: 0 0 0 2px rgba(219, 205, 165, 0.4);
       }
 
       .landings-chat-messages {
@@ -219,7 +221,7 @@
       }
 
       .landings-message.user {
-        background: linear-gradient(135deg, ${CONFIG.primaryColor} 0%, ${CONFIG.primaryLight} 100%);
+        background: ${CONFIG.primaryColor};
         color: white;
         align-self: flex-end;
         border-radius: 18px 18px 4px 18px;
@@ -274,7 +276,7 @@
       .landings-chat-input:focus {
         border-color: ${CONFIG.primaryColor};
         background: white;
-        box-shadow: 0 0 0 3px rgba(26, 71, 42, 0.1);
+        box-shadow: 0 0 0 3px rgba(9, 54, 88, 0.1);
       }
 
       .landings-chat-input::placeholder {
@@ -285,7 +287,7 @@
         width: 48px;
         height: 48px;
         border-radius: 50%;
-        background: linear-gradient(135deg, ${CONFIG.primaryColor} 0%, ${CONFIG.primaryLight} 100%);
+        background: ${CONFIG.ctaColor};
         border: none;
         cursor: pointer;
         display: flex;
@@ -297,7 +299,8 @@
 
       .landings-chat-send:hover {
         transform: scale(1.05);
-        box-shadow: 0 4px 12px rgba(26, 71, 42, 0.3);
+        background: #558f17;
+        box-shadow: 0 4px 12px rgba(99, 167, 27, 0.35);
       }
 
       .landings-chat-send:disabled {
@@ -344,13 +347,13 @@
       .landings-lead-form select:focus {
         border-color: ${CONFIG.primaryColor};
         background: white;
-        box-shadow: 0 0 0 3px rgba(26, 71, 42, 0.1);
+        box-shadow: 0 0 0 3px rgba(9, 54, 88, 0.1);
       }
 
       .landings-lead-form button {
         width: 100%;
         padding: 14px;
-        background: linear-gradient(135deg, ${CONFIG.primaryColor} 0%, ${CONFIG.primaryLight} 100%);
+        background: ${CONFIG.ctaColor};
         color: white;
         border: none;
         border-radius: 10px;
@@ -362,7 +365,8 @@
       }
 
       .landings-lead-form button:hover {
-        box-shadow: 0 4px 12px rgba(26, 71, 42, 0.3);
+        background: #558f17;
+        box-shadow: 0 4px 12px rgba(99, 167, 27, 0.35);
         transform: translateY(-1px);
       }
 
@@ -394,9 +398,9 @@
       }
 
       .landings-quick-action:hover {
-        background: ${CONFIG.primaryColor};
+        background: ${CONFIG.ctaColor};
         color: white;
-        border-color: ${CONFIG.primaryColor};
+        border-color: ${CONFIG.ctaColor};
       }
 
       .landings-powered {
