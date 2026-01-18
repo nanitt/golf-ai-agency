@@ -76,21 +76,26 @@ CREATE POLICY "Service role can do everything" ON landings_leads
 ```
 
 ## Deployment Status
-- [ ] Dependencies installed (`npm install`)
-- [ ] .env file created with real keys
-- [ ] Supabase table created
-- [ ] Deployed to Vercel
-- [ ] Environment variables added to Vercel
-- [ ] Tested chat functionality
-- [ ] Tested lead capture
+- [x] Dependencies installed (`npm install`)
+- [x] .env file created with real keys
+- [x] Supabase table created
+- [x] Deployed to Vercel
+- [x] Environment variables added to Vercel
+- [x] Tested chat functionality
+- [ ] Tested lead capture (form submission)
 - [ ] Tested email notifications
+
+## Live URLs
+- **Demo Site:** https://golf-ai-agency.vercel.app
+- **Admin Dashboard:** https://golf-ai-agency.vercel.app/admin.html (key: landings2026admin)
+- **GitHub:** https://github.com/nanitt/golf-ai-agency
 
 ## Embed Code (for WordPress)
 ```html
 <script>
-  window.LANDINGS_API_BASE = 'https://YOUR-VERCEL-URL.vercel.app';
+  window.LANDINGS_API_BASE = 'https://golf-ai-agency.vercel.app';
 </script>
-<script src="https://YOUR-VERCEL-URL.vercel.app/public/widget.js"></script>
+<script src="https://golf-ai-agency.vercel.app/public/widget.js"></script>
 ```
 
 ## API Endpoints
