@@ -1,6 +1,7 @@
 {
   "name": "landings-digital-front-desk",
   "version": "1.0.0",
+  "type": "module",
   "description": "Lead-generation chatbot for The Landings Golf Course Winter Instructional Program",
   "main": "api/chat.js",
   "scripts": {
