@@ -4,9 +4,13 @@
   // Configuration
   const CONFIG = {
     apiBase: window.LANDINGS_API_BASE || '',
-    primaryColor: '#1a472a', // Dark green (golf course green)
-    secondaryColor: '#2d5a3d',
-    accentColor: '#4a7c59'
+    primaryColor: '#1a472a',
+    primaryDark: '#0f2a1a',
+    primaryLight: '#2d5a3d',
+    accentColor: '#d4b843',
+    grayLight: '#f3f4f6',
+    grayMedium: '#9ca3af',
+    grayDark: '#374151'
   };
 
   // State
@@ -14,8 +18,6 @@
   let messages = [];
   let isLoading = false;
   let conversationId = null;
-  let showLeadForm = false;
-  let leadData = { name: '', email: '', block: '' };
 
   // Create and inject styles
   function injectStyles() {
@@ -23,55 +25,82 @@
     style.textContent = `
       .landings-widget-container * {
         box-sizing: border-box;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        -webkit-font-smoothing: antialiased;
       }
 
       .landings-chat-button {
         position: fixed;
-        bottom: 20px;
-        right: 20px;
-        width: 60px;
-        height: 60px;
+        bottom: 24px;
+        right: 24px;
+        width: 64px;
+        height: 64px;
         border-radius: 50%;
-        background: ${CONFIG.primaryColor};
+        background: linear-gradient(135deg, ${CONFIG.primaryColor} 0%, ${CONFIG.primaryLight} 100%);
         border: none;
         cursor: pointer;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        box-shadow: 0 4px 20px rgba(26, 71, 42, 0.35);
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: transform 0.2s, box-shadow 0.2s;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         z-index: 9999;
+      }
+
+      .landings-chat-button::before {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: inherit;
+        animation: landings-pulse 2s infinite;
+        z-index: -1;
+      }
+
+      .landings-chat-button.open::before {
+        animation: none;
+      }
+
+      @keyframes landings-pulse {
+        0% { transform: scale(1); opacity: 0.5; }
+        50% { transform: scale(1.15); opacity: 0; }
+        100% { transform: scale(1); opacity: 0; }
       }
 
       .landings-chat-button:hover {
         transform: scale(1.05);
-        box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+        box-shadow: 0 6px 24px rgba(26, 71, 42, 0.45);
       }
 
       .landings-chat-button svg {
         width: 28px;
         height: 28px;
         fill: white;
+        transition: transform 0.3s ease;
+      }
+
+      .landings-chat-button.open svg {
+        transform: rotate(90deg);
       }
 
       .landings-chat-window {
         position: fixed;
-        bottom: 90px;
-        right: 20px;
-        width: 380px;
-        height: 520px;
+        bottom: 100px;
+        right: 24px;
+        width: 400px;
+        height: 560px;
         background: white;
-        border-radius: 16px;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+        border-radius: 20px;
+        box-shadow: 0 12px 48px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05);
         display: flex;
         flex-direction: column;
         overflow: hidden;
         z-index: 9998;
         opacity: 0;
-        transform: translateY(20px) scale(0.95);
+        transform: translateY(16px) scale(0.96);
         pointer-events: none;
-        transition: opacity 0.3s, transform 0.3s;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
       .landings-chat-window.open {
@@ -81,125 +110,23 @@
       }
 
       .landings-chat-header {
-        background: linear-gradient(135deg, ${CONFIG.primaryColor} 0%, ${CONFIG.secondaryColor} 100%);
+        background: linear-gradient(135deg, ${CONFIG.primaryDark} 0%, ${CONFIG.primaryColor} 100%);
         color: white;
-        padding: 16px 20px;
+        padding: 20px 20px;
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 14px;
+        position: relative;
       }
 
-      .landings-chat-header-icon {
-        width: 40px;
-        height: 40px;
-        background: rgba(255,255,255,0.2);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .landings-chat-header-icon svg {
-        width: 24px;
-        height: 24px;
-        fill: white;
-      }
-
-      .landings-chat-header-text h3 {
-        margin: 0;
-        font-size: 16px;
-        font-weight: 600;
-      }
-
-      .landings-chat-header-text p {
-        margin: 2px 0 0;
-        font-size: 12px;
-        opacity: 0.9;
-      }
-
-      .landings-chat-messages {
-        flex: 1;
-        overflow-y: auto;
-        padding: 16px;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-
-      .landings-message {
-        max-width: 85%;
-        padding: 12px 16px;
-        border-radius: 16px;
-        font-size: 14px;
-        line-height: 1.5;
-      }
-
-      .landings-message.bot {
-        background: #f0f4f1;
-        color: #1a1a1a;
-        align-self: flex-start;
-        border-bottom-left-radius: 4px;
-      }
-
-      .landings-message.user {
-        background: ${CONFIG.primaryColor};
-        color: white;
-        align-self: flex-end;
-        border-bottom-right-radius: 4px;
-      }
-
-      .landings-typing {
-        display: flex;
-        gap: 4px;
-        padding: 12px 16px;
-        background: #f0f4f1;
-        border-radius: 16px;
-        align-self: flex-start;
-        border-bottom-left-radius: 4px;
-      }
-
-      .landings-typing span {
-        width: 8px;
-        height: 8px;
-        background: ${CONFIG.accentColor};
-        border-radius: 50%;
-        animation: landingsTyping 1.4s infinite;
-      }
-
-      .landings-typing span:nth-child(2) { animation-delay: 0.2s; }
-      .landings-typing span:nth-child(3) { animation-delay: 0.4s; }
-
-      @keyframes landingsTyping {
-        0%, 60%, 100% { transform: translateY(0); }
-        30% { transform: translateY(-4px); }
-      }
-
-      .landings-chat-input-container {
-        padding: 12px 16px;
-        border-top: 1px solid #e5e7eb;
-        display: flex;
-        gap: 8px;
-      }
-
-      .landings-chat-input {
-        flex: 1;
-        padding: 10px 14px;
-        border: 1px solid #e5e7eb;
-        border-radius: 24px;
-        font-size: 14px;
-        outline: none;
-        transition: border-color 0.2s;
-      }
-
-      .landings-chat-input:focus {
-        border-color: ${CONFIG.primaryColor};
-      }
-
-      .landings-chat-send {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: ${CONFIG.primaryColor};
+      .landings-chat-header-close {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: rgba(255,255,255,0.1);
         border: none;
         cursor: pointer;
         display: flex;
@@ -208,91 +135,287 @@
         transition: background 0.2s;
       }
 
-      .landings-chat-send:hover {
-        background: ${CONFIG.secondaryColor};
+      .landings-chat-header-close:hover {
+        background: rgba(255,255,255,0.2);
       }
 
-      .landings-chat-send:disabled {
-        background: #ccc;
-        cursor: not-allowed;
-      }
-
-      .landings-chat-send svg {
+      .landings-chat-header-close svg {
         width: 18px;
         height: 18px;
         fill: white;
       }
 
+      .landings-chat-header-icon {
+        width: 48px;
+        height: 48px;
+        background: rgba(255,255,255,0.15);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .landings-chat-header-icon svg {
+        width: 26px;
+        height: 26px;
+        fill: ${CONFIG.accentColor};
+      }
+
+      .landings-chat-header-text h3 {
+        margin: 0;
+        font-size: 17px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+
+      .landings-chat-header-status {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 4px;
+        font-size: 13px;
+        opacity: 0.85;
+      }
+
+      .landings-chat-header-status::before {
+        content: '';
+        width: 8px;
+        height: 8px;
+        background: #4ade80;
+        border-radius: 50%;
+        box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.3);
+      }
+
+      .landings-chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        background: ${CONFIG.grayLight};
+      }
+
+      .landings-message {
+        max-width: 85%;
+        padding: 14px 18px;
+        font-size: 14px;
+        line-height: 1.55;
+        animation: landings-fadeIn 0.3s ease;
+      }
+
+      @keyframes landings-fadeIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .landings-message.bot {
+        background: white;
+        color: ${CONFIG.grayDark};
+        align-self: flex-start;
+        border-radius: 4px 18px 18px 18px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      }
+
+      .landings-message.user {
+        background: linear-gradient(135deg, ${CONFIG.primaryColor} 0%, ${CONFIG.primaryLight} 100%);
+        color: white;
+        align-self: flex-end;
+        border-radius: 18px 18px 4px 18px;
+      }
+
+      .landings-typing {
+        display: flex;
+        gap: 5px;
+        padding: 16px 20px;
+        background: white;
+        border-radius: 4px 18px 18px 18px;
+        align-self: flex-start;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      }
+
+      .landings-typing span {
+        width: 8px;
+        height: 8px;
+        background: ${CONFIG.grayMedium};
+        border-radius: 50%;
+        animation: landingsTyping 1.4s infinite;
+      }
+
+      .landings-typing span:nth-child(2) { animation-delay: 0.15s; }
+      .landings-typing span:nth-child(3) { animation-delay: 0.3s; }
+
+      @keyframes landingsTyping {
+        0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+        30% { transform: translateY(-4px); opacity: 1; }
+      }
+
+      .landings-chat-input-container {
+        padding: 16px 20px;
+        background: white;
+        border-top: 1px solid #e5e7eb;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .landings-chat-input {
+        flex: 1;
+        padding: 14px 18px;
+        border: 1px solid #e5e7eb;
+        border-radius: 100px;
+        font-size: 14px;
+        outline: none;
+        transition: all 0.2s;
+        background: ${CONFIG.grayLight};
+      }
+
+      .landings-chat-input:focus {
+        border-color: ${CONFIG.primaryColor};
+        background: white;
+        box-shadow: 0 0 0 3px rgba(26, 71, 42, 0.1);
+      }
+
+      .landings-chat-input::placeholder {
+        color: ${CONFIG.grayMedium};
+      }
+
+      .landings-chat-send {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, ${CONFIG.primaryColor} 0%, ${CONFIG.primaryLight} 100%);
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        flex-shrink: 0;
+      }
+
+      .landings-chat-send:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(26, 71, 42, 0.3);
+      }
+
+      .landings-chat-send:disabled {
+        background: ${CONFIG.grayMedium};
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+
+      .landings-chat-send svg {
+        width: 20px;
+        height: 20px;
+        fill: white;
+        margin-left: 2px;
+      }
+
       .landings-lead-form {
-        padding: 16px;
-        background: #f8faf9;
+        padding: 20px;
+        background: white;
         border-top: 1px solid #e5e7eb;
       }
 
       .landings-lead-form h4 {
-        margin: 0 0 12px;
-        font-size: 14px;
+        margin: 0 0 16px;
+        font-size: 15px;
+        font-weight: 600;
         color: ${CONFIG.primaryColor};
       }
 
       .landings-lead-form input,
       .landings-lead-form select {
         width: 100%;
-        padding: 10px 12px;
-        margin-bottom: 8px;
+        padding: 12px 16px;
+        margin-bottom: 10px;
         border: 1px solid #e5e7eb;
-        border-radius: 8px;
+        border-radius: 10px;
         font-size: 14px;
         outline: none;
+        transition: all 0.2s;
+        background: ${CONFIG.grayLight};
       }
 
       .landings-lead-form input:focus,
       .landings-lead-form select:focus {
         border-color: ${CONFIG.primaryColor};
+        background: white;
+        box-shadow: 0 0 0 3px rgba(26, 71, 42, 0.1);
       }
 
       .landings-lead-form button {
         width: 100%;
-        padding: 12px;
-        background: ${CONFIG.primaryColor};
+        padding: 14px;
+        background: linear-gradient(135deg, ${CONFIG.primaryColor} 0%, ${CONFIG.primaryLight} 100%);
         color: white;
         border: none;
-        border-radius: 8px;
+        border-radius: 10px;
         font-size: 14px;
         font-weight: 600;
         cursor: pointer;
-        transition: background 0.2s;
+        transition: all 0.2s;
+        margin-top: 4px;
       }
 
       .landings-lead-form button:hover {
-        background: ${CONFIG.secondaryColor};
+        box-shadow: 0 4px 12px rgba(26, 71, 42, 0.3);
+        transform: translateY(-1px);
       }
 
       .landings-lead-form button:disabled {
-        background: #ccc;
+        background: ${CONFIG.grayMedium};
         cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
       }
 
       .landings-quick-actions {
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
-        padding: 0 16px 12px;
+        padding: 0 20px 16px;
+        background: ${CONFIG.grayLight};
       }
 
       .landings-quick-action {
-        padding: 8px 14px;
-        background: #f0f4f1;
+        padding: 10px 16px;
+        background: white;
         border: 1px solid #e5e7eb;
-        border-radius: 20px;
+        border-radius: 100px;
         font-size: 13px;
+        font-weight: 500;
+        color: ${CONFIG.grayDark};
         cursor: pointer;
-        transition: background 0.2s, border-color 0.2s;
+        transition: all 0.2s;
       }
 
       .landings-quick-action:hover {
-        background: #e5ebe7;
+        background: ${CONFIG.primaryColor};
+        color: white;
         border-color: ${CONFIG.primaryColor};
+      }
+
+      .landings-powered {
+        padding: 12px 20px;
+        background: white;
+        border-top: 1px solid #e5e7eb;
+        text-align: center;
+        font-size: 11px;
+        color: ${CONFIG.grayMedium};
+      }
+
+      .landings-powered a {
+        color: ${CONFIG.primaryColor};
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .landings-powered a:hover {
+        text-decoration: underline;
       }
 
       @media (max-width: 480px) {
@@ -306,8 +429,8 @@
         }
 
         .landings-chat-button {
-          bottom: 16px;
-          right: 16px;
+          bottom: 20px;
+          right: 20px;
         }
       }
     `;
@@ -319,7 +442,7 @@
     chat: `<svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/><path d="M7 9h10v2H7zm0-3h10v2H7z"/></svg>`,
     close: `<svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>`,
     send: `<svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>`,
-    golf: `<svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="3"/><path d="M12 8c-2.21 0-4 1.79-4 4v8h2v-4h4v4h2v-8c0-2.21-1.79-4-4-4z"/></svg>`
+    golf: `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>`
   };
 
   // Generate conversation ID
@@ -337,12 +460,15 @@
       </button>
       <div class="landings-chat-window">
         <div class="landings-chat-header">
+          <button class="landings-chat-header-close" aria-label="Close chat">
+            ${icons.close}
+          </button>
           <div class="landings-chat-header-icon">
             ${icons.golf}
           </div>
           <div class="landings-chat-header-text">
             <h3>The Landings Golf Course</h3>
-            <p>Winter Instructional Program</p>
+            <div class="landings-chat-header-status">Online now</div>
           </div>
         </div>
         <div class="landings-chat-messages" id="landings-messages"></div>
@@ -353,10 +479,10 @@
         </div>
         <div class="landings-lead-form" id="landings-lead-form" style="display: none;">
           <h4>Register Your Interest</h4>
-          <input type="text" id="landings-lead-name" placeholder="Your Name" required>
-          <input type="email" id="landings-lead-email" placeholder="Email Address" required>
+          <input type="text" id="landings-lead-name" placeholder="Your name" required>
+          <input type="email" id="landings-lead-email" placeholder="Email address" required>
           <select id="landings-lead-block">
-            <option value="">Select a Block...</option>
+            <option value="">Select a block...</option>
             <option value="block1">Block 1: Jan 12 - Feb 15, 2026</option>
             <option value="block2">Block 2: Feb 16 - Mar 22, 2026</option>
             <option value="both">Both Blocks</option>
@@ -369,6 +495,9 @@
           <button class="landings-chat-send" id="landings-send" aria-label="Send message">
             ${icons.send}
           </button>
+        </div>
+        <div class="landings-powered">
+          Powered by <a href="https://celticgolfkingston.ca" target="_blank">Golf AI Agency</a>
         </div>
       </div>
     `;
@@ -418,7 +547,7 @@
         body: JSON.stringify({
           message: userMessage,
           conversationId: conversationId,
-          history: messages.slice(0, -1) // Exclude the message we just added
+          history: messages.slice(0, -1)
         })
       });
 
@@ -430,7 +559,6 @@
 
       // Check if we should show lead form
       if (data.showLeadForm) {
-        showLeadForm = true;
         document.getElementById('landings-lead-form').style.display = 'block';
         document.getElementById('landings-input-container').style.display = 'none';
       }
@@ -503,6 +631,7 @@
 
     if (isOpen) {
       chatWindow.classList.add('open');
+      chatButton.classList.add('open');
       chatButton.innerHTML = icons.close;
 
       // Initialize conversation if needed
@@ -521,6 +650,7 @@
       }, 300);
     } else {
       chatWindow.classList.remove('open');
+      chatButton.classList.remove('open');
       chatButton.innerHTML = icons.chat;
     }
   }
@@ -532,6 +662,7 @@
 
     // Event listeners
     container.querySelector('.landings-chat-button').addEventListener('click', toggleChat);
+    container.querySelector('.landings-chat-header-close').addEventListener('click', toggleChat);
 
     container.querySelector('#landings-send').addEventListener('click', () => {
       const input = document.getElementById('landings-input');
