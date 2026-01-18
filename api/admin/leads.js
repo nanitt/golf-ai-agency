@@ -20,7 +20,15 @@ export default async function handler(req, res) {
   const providedKey = authHeader?.replace('Bearer ', '');
 
   if (providedKey !== ADMIN_KEY) {
-    return res.status(401).json({ error: 'Unauthorized' });
+    return res.status(401).json({
+      error: 'Unauthorized',
+      debug: {
+        hasAuthHeader: !!authHeader,
+        keyLength: providedKey?.length || 0,
+        expectedLength: ADMIN_KEY?.length || 0,
+        envKeySet: !!process.env.ADMIN_KEY
+      }
+    });
   }
 
   const supabase = createClient(
