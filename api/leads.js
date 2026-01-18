@@ -67,7 +67,7 @@ export default async function handler(req, res) {
     // Send email notification
     try {
       await resend.emails.send({
-        from: 'The Landings Chatbot <notifications@golfagency.ca>',
+        from: 'The Landings Chatbot <bookings@celticgolfkingston.ca>',
         to: NOTIFICATION_EMAIL,
         subject: `New Winter Program Interest: ${name}`,
         html: `
