@@ -27,7 +27,7 @@
     style.textContent = `
       .landings-widget-container * {
         box-sizing: border-box;
-        font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         -webkit-font-smoothing: antialiased;
       }
 
@@ -169,6 +169,7 @@
         font-size: 17px;
         font-weight: 600;
         letter-spacing: -0.01em;
+        font-family: 'Playfair Display', Georgia, serif;
       }
 
       .landings-chat-header-status {
