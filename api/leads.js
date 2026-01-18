@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
+import { rateLimit, checkEmailRateLimit, isLikelyBot, getClientIP } from '../lib/rateLimit.js';
+import { sendSlackNotification } from '../lib/slack.js';
 
 const BLOCK_LABELS = {
   block1: 'Block 1: January 12 - February 15, 2026',
@@ -10,6 +12,38 @@ const BLOCK_LABELS = {
 };
 
 const VALID_BLOCKS = ['block1', 'block2', 'both', 'full', 'undecided'];
+
+// Lead scoring keywords (same as chat.js for consistency)
+const SCORING_KEYWORDS = {
+  pricing: { keywords: ['price', 'cost', 'how much', 'fee', 'payment', 'pay', 'afford', '$'], score: 5 },
+  instructors: { keywords: ['instructor', 'teacher', 'coach', 'professional', 'pro', 'chris', 'michael', 'maddy'], score: 10 },
+  signup: { keywords: ['sign up', 'signup', 'register', 'join', 'enroll', 'book', 'reserve', 'spot', 'interested'], score: 15 },
+  dates: { keywords: ['when', 'date', 'schedule', 'start', 'january', 'february', 'march', 'block 1', 'block 2'], score: 5 },
+  comparison: { keywords: ['compare', 'difference', 'better', 'which', 'recommend'], score: 8 },
+  facilities: { keywords: ['facility', 'simulator', 'foresight', 'launch monitor', 'equipment'], score: 5 },
+  urgency: { keywords: ['available', 'spots left', 'full', 'hurry', 'soon', 'deadline'], score: 10 }
+};
+
+// Calculate conversation score
+function calculateConversationScore(messages) {
+  if (!messages || !Array.isArray(messages)) return 0;
+
+  let totalScore = 0;
+  for (const msg of messages) {
+    if (msg.role === 'user' && msg.content) {
+      const messageLower = msg.content.toLowerCase();
+      for (const category of Object.values(SCORING_KEYWORDS)) {
+        for (const keyword of category.keywords) {
+          if (messageLower.includes(keyword)) {
+            totalScore += category.score;
+            break;
+          }
+        }
+      }
+    }
+  }
+  return totalScore;
+}
 
 export default async function handler(req, res) {
   // CORS headers
@@ -25,6 +59,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Rate limit: 5 lead submissions per minute per IP
+  if (!rateLimit(req, res, 'leads', 5)) {
+    return;
+  }
+
   try {
     // Initialize clients at runtime to ensure env vars are available
     const supabase = createClient(
@@ -34,7 +73,13 @@ export default async function handler(req, res) {
     const resend = new Resend(process.env.RESEND_API_KEY);
     const NOTIFICATION_EMAIL = process.env.NOTIFICATION_EMAIL || 'natemaclennan@outlook.com';
 
-    const { name, email, block, conversationId, messages } = req.body;
+    const { name, email, block, conversationId, messages, consent, website } = req.body;
+
+    // Honeypot check - if 'website' field is filled, it's likely a bot
+    if (isLikelyBot({ website })) {
+      // Return success to not reveal detection
+      return res.status(200).json({ success: true, leadId: 'filtered' });
+    }
 
     // Validation
     if (!name || !email || !block) {
@@ -52,6 +97,15 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid block preference. Choose: block1, block2, both, full, or undecided' });
     }
 
+    // Rate limit by email: max 3 submissions per day per email
+    const emailRateCheck = checkEmailRateLimit(email);
+    if (!emailRateCheck.allowed) {
+      return res.status(429).json({
+        error: 'Too many submissions',
+        message: 'You have already registered. Chris will be in touch soon!'
+      });
+    }
+
     // Check for duplicate email
     const { data: existingLead } = await supabase
       .from('landings_leads')
@@ -66,17 +120,22 @@ export default async function handler(req, res) {
       });
     }
 
+    // Calculate lead score from conversation
+    const score = calculateConversationScore(messages);
+
     // Save to Supabase
     const { data: lead, error: dbError } = await supabase
       .from('landings_leads')
       .insert({
         name,
-        email,
+        email: email.toLowerCase(),
         block_preference: block,
         conversation_id: conversationId,
         conversation_history: messages,
         source: 'chatbot',
-        status: 'new'
+        status: 'new',
+        score: score,
+        tags: []
       })
       .select()
       .single();
@@ -85,6 +144,15 @@ export default async function handler(req, res) {
       console.error('Supabase error:', dbError);
       throw new Error('Failed to save lead');
     }
+
+    // Send Slack notification (fire and forget)
+    sendSlackNotification({
+      name,
+      email,
+      block_preference: block,
+      score,
+      source: 'chatbot'
+    }).catch(err => console.error('Slack notification failed:', err));
 
     // Send email notification
     try {

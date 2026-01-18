@@ -7,6 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
   <style>
     :root {
       --navy-900: #0e2a42;
@@ -25,6 +27,34 @@
       --white: #FDFCF9;
       --font-heading: 'Playfair Display', Georgia, serif;
       --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+      /* Theme colors */
+      --bg-primary: #FDFCF9;
+      --bg-card: white;
+      --text-primary: var(--gray-900);
+      --text-secondary: var(--gray-700);
+      --border-color: var(--gray-100);
+      --input-bg: white;
+      --table-hover: var(--gray-50);
+    }
+
+    /* Dark mode */
+    [data-theme="dark"] {
+      --bg-primary: #0f172a;
+      --bg-card: #1e293b;
+      --text-primary: #f1f5f9;
+      --text-secondary: #cbd5e1;
+      --border-color: #334155;
+      --input-bg: #1e293b;
+      --table-hover: #334155;
+      --gray-50: #1e293b;
+      --gray-100: #334155;
+      --gray-300: #475569;
+      --gray-500: #94a3b8;
+      --gray-700: #cbd5e1;
+      --gray-900: #f1f5f9;
+      --white: #0f172a;
+      --cream: #1e293b;
     }
 
     * {
@@ -33,10 +63,58 @@
       padding: 0;
     }
 
+    /* Screen reader only */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
     body {
       font-family: var(--font-body);
-      background: var(--white);
+      background: var(--bg-primary);
+      color: var(--text-primary);
       min-height: 100vh;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    /* Dark mode toggle */
+    .theme-toggle {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: var(--gold-500);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.875rem;
+      transition: all 0.2s;
+    }
+
+    .theme-toggle:hover {
+      background: rgba(255,255,255,0.1);
+    }
+
+    .theme-toggle svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    [data-theme="dark"] .theme-toggle .icon-moon,
+    .theme-toggle .icon-sun {
+      display: none;
+    }
+
+    [data-theme="dark"] .theme-toggle .icon-sun {
+      display: block;
     }
 
     h1, h2, h3, h4 {
@@ -162,9 +240,9 @@
     }
 
     .stat-card h3 {
-      color: var(--gray-500);
+      color: var(--gray-700);
       font-size: 0.8rem;
-      font-weight: 500;
+      font-weight: 600;
       margin-bottom: 8px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
@@ -177,10 +255,183 @@
     }
 
     .stat-card .value.green { color: var(--green-500); }
+    .stat-card .value.orange { color: #f59e0b; }
+    .stat-card .value.red { color: #dc2626; }
     .stat-card .sub {
       font-size: 0.75rem;
-      color: var(--gray-500);
+      color: var(--gray-700);
       margin-top: 4px;
+    }
+
+    .stat-card.clickable {
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .stat-card.clickable:hover {
+      border-color: var(--navy-700);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .stat-card.active {
+      border-color: var(--navy-700);
+      background: var(--cream);
+    }
+
+    /* Score badge */
+    .score-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 100px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .score-badge.hot {
+      background: #fef3c7;
+      color: #b45309;
+    }
+
+    .score-badge.warm {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .score-badge.cold {
+      background: var(--gray-100);
+      color: var(--gray-500);
+    }
+
+    /* Tags */
+    .tags-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      background: var(--cream);
+      border: 1px solid var(--gold-400);
+      border-radius: 4px;
+      font-size: 0.7rem;
+      color: var(--navy-800);
+      font-weight: 500;
+    }
+
+    .tag.follow_up { background: #fef3c7; border-color: #fcd34d; }
+    .tag.referred { background: #dbeafe; border-color: #93c5fd; }
+    .tag.needs_discount { background: #fce7f3; border-color: #f9a8d4; }
+    .tag.vip { background: #dcfce7; border-color: #86efac; }
+    .tag.junior { background: #e0e7ff; border-color: #a5b4fc; }
+    .tag.returning { background: #f3e8ff; border-color: #d8b4fe; }
+
+    /* Bulk actions bar */
+    .bulk-actions {
+      background: var(--navy-800);
+      padding: 12px 20px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      display: none;
+      align-items: center;
+      gap: 16px;
+      color: white;
+    }
+
+    .bulk-actions.visible {
+      display: flex;
+    }
+
+    .bulk-actions .selected-count {
+      font-weight: 500;
+    }
+
+    .bulk-actions select {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.1);
+      color: white;
+      font-size: 0.875rem;
+    }
+
+    .bulk-actions button {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+    }
+
+    .bulk-actions .btn-apply {
+      background: var(--green-500);
+      color: white;
+    }
+
+    .bulk-actions .btn-delete {
+      background: #dc2626;
+      color: white;
+    }
+
+    .bulk-actions .btn-cancel {
+      background: transparent;
+      color: white;
+      border: 1px solid rgba(255,255,255,0.3);
+    }
+
+    /* Stale lead highlighting */
+    .leads-table tr.stale {
+      background: #fef3c7;
+    }
+
+    .leads-table tr.stale:hover {
+      background: #fef08a;
+    }
+
+    /* Checkbox styling */
+    .leads-table input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    /* Tag picker in modal */
+    .tag-picker {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .tag-picker label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: var(--gray-50);
+      border: 1px solid var(--gray-300);
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tag-picker label:hover {
+      border-color: var(--navy-700);
+    }
+
+    .tag-picker label.selected {
+      background: var(--cream);
+      border-color: var(--gold-500);
+    }
+
+    .tag-picker input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
     }
 
     .filters {
@@ -362,7 +613,8 @@
       font-size: 0.75rem;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: var(--gray-500);
+      color: var(--gray-700);
+      font-weight: 600;
       margin-bottom: 12px;
     }
 
@@ -374,7 +626,8 @@
 
     .detail-item label {
       font-size: 0.75rem;
-      color: var(--gray-500);
+      color: var(--gray-700);
+      font-weight: 500;
       display: block;
       margin-bottom: 4px;
     }
@@ -443,6 +696,344 @@
       gap: 12px;
     }
 
+    /* Pagination */
+    .pagination {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      background: white;
+      border-radius: 0 0 12px 12px;
+      border-top: 1px solid var(--gray-100);
+    }
+
+    .pagination-info {
+      font-size: 0.875rem;
+      color: var(--gray-700);
+    }
+
+    .pagination-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pagination-btn {
+      padding: 8px 14px;
+      border: 1px solid var(--gray-300);
+      border-radius: 6px;
+      background: white;
+      color: var(--gray-700);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .pagination-btn:hover:not(:disabled) {
+      background: var(--gray-50);
+      border-color: var(--navy-700);
+      color: var(--navy-800);
+    }
+
+    .pagination-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .pagination-pages {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .pagination-page {
+      min-width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--gray-700);
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .pagination-page:hover {
+      background: var(--gray-100);
+    }
+
+    .pagination-page.active {
+      background: var(--navy-800);
+      color: white;
+      border-color: var(--navy-800);
+    }
+
+    .pagination-ellipsis {
+      color: var(--gray-500);
+      padding: 0 4px;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 24px;
+      background: var(--gray-100);
+      padding: 4px;
+      border-radius: 10px;
+      width: fit-content;
+    }
+
+    .tab-btn {
+      padding: 10px 20px;
+      border: none;
+      background: transparent;
+      color: var(--gray-600);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    .tab-btn:hover {
+      color: var(--gray-900);
+    }
+
+    .tab-btn.active {
+      background: white;
+      color: var(--navy-800);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Analytics */
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .analytics-card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .analytics-card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--navy-800);
+      margin-bottom: 20px;
+    }
+
+    .funnel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .funnel-step {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .funnel-bar-container {
+      flex: 1;
+      background: var(--gray-100);
+      border-radius: 6px;
+      height: 32px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .funnel-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--navy-800), var(--navy-700));
+      border-radius: 6px;
+      transition: width 0.5s ease;
+      min-width: 2px;
+    }
+
+    .funnel-label {
+      width: 100px;
+      font-size: 0.75rem;
+      color: var(--gray-600);
+      font-weight: 500;
+    }
+
+    .funnel-value {
+      width: 60px;
+      text-align: right;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--navy-800);
+    }
+
+    .conversion-rates {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .rate-item {
+      text-align: center;
+      padding: 16px;
+      background: var(--gray-50);
+      border-radius: 8px;
+    }
+
+    .rate-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--navy-800);
+    }
+
+    .rate-label {
+      font-size: 0.75rem;
+      color: var(--gray-600);
+      margin-top: 4px;
+    }
+
+    .chart-container {
+      height: 200px;
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      padding: 16px 0;
+    }
+
+    .chart-bar-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .chart-bar {
+      width: 100%;
+      max-width: 24px;
+      background: linear-gradient(180deg, var(--navy-700), var(--navy-800));
+      border-radius: 4px 4px 0 0;
+      transition: height 0.3s ease;
+      min-height: 2px;
+    }
+
+    .chart-label {
+      font-size: 9px;
+      color: var(--gray-500);
+      transform: rotate(-45deg);
+      white-space: nowrap;
+    }
+
+    .distribution-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .dist-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .dist-label {
+      width: 80px;
+      font-size: 0.8rem;
+      color: var(--gray-600);
+    }
+
+    .dist-bar-container {
+      flex: 1;
+      background: var(--gray-100);
+      border-radius: 4px;
+      height: 24px;
+      overflow: hidden;
+    }
+
+    .dist-bar {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+
+    .dist-bar.cold { background: var(--gray-400); }
+    .dist-bar.warm { background: var(--gold-500); }
+    .dist-bar.hot { background: #f59e0b; }
+    .dist-bar.new { background: var(--green-500); }
+    .dist-bar.contacted { background: #f59e0b; }
+    .dist-bar.converted { background: #3b82f6; }
+    .dist-bar.archived { background: var(--gray-400); }
+
+    .dist-value {
+      width: 40px;
+      text-align: right;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--gray-700);
+    }
+
+    /* AI Summary */
+    .ai-summary {
+      background: var(--gray-50);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .ai-summary.loading {
+      text-align: center;
+      color: var(--gray-500);
+    }
+
+    .ai-summary .summary-text {
+      color: var(--gray-700);
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    .ai-summary .summary-topics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .ai-summary .topic-tag {
+      background: var(--navy-800);
+      color: white;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .ai-summary .sentiment {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--gray-600);
+    }
+
+    .ai-summary .sentiment.positive { color: var(--green-500); }
+    .ai-summary .sentiment.negative { color: #dc2626; }
+
     @media (max-width: 768px) {
       .header-content {
         flex-direction: column;
@@ -469,6 +1060,11 @@
       .detail-grid {
         grid-template-columns: 1fr;
       }
+
+      .pagination {
+        flex-direction: column;
+        gap: 12px;
+      }
     }
   </style>
 </head>
@@ -480,20 +1076,62 @@
         <p>Winter Instructional Program 2026</p>
       </div>
       <div class="header-actions" id="header-actions" style="display: none;">
-        <button class="btn btn-secondary" onclick="exportCSV()">Export CSV</button>
-        <button class="btn btn-secondary" onclick="loadLeads()">Refresh</button>
+        <button class="theme-toggle" onclick="toggleDarkMode()" aria-label="Toggle dark mode">
+          <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+          </svg>
+          <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+        </button>
+        <button class="btn btn-secondary" onclick="showShortcutsHelp()" title="Press ? to show shortcuts" aria-label="Keyboard shortcuts">
+          <span style="display: inline-flex; align-items: center; gap: 4px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+            <kbd style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 3px; font-size: 10px;">?</kbd>
+          </span>
+        </button>
+        <div class="export-dropdown" style="position: relative; display: inline-block;">
+          <button class="btn btn-secondary" onclick="toggleExportMenu()" aria-label="Export leads" aria-haspopup="true">
+            Export ▼
+          </button>
+          <div id="export-menu" class="export-menu" style="display: none; position: absolute; top: 100%; right: 0; background: var(--white); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 160px; z-index: 100; margin-top: 4px;">
+            <button onclick="exportCSV(false)" style="display: block; width: 100%; padding: 10px 16px; text-align: left; border: none; background: none; cursor: pointer; color: var(--gray-800); font-size: 0.875rem;">
+              Export CSV
+            </button>
+            <button onclick="exportCSV(true)" style="display: block; width: 100%; padding: 10px 16px; text-align: left; border: none; background: none; cursor: pointer; color: var(--gray-800); font-size: 0.875rem;">
+              Export CSV (with conversations)
+            </button>
+            <hr style="margin: 4px 0; border: none; border-top: 1px solid var(--gray-200);">
+            <button onclick="exportPDF(false)" style="display: block; width: 100%; padding: 10px 16px; text-align: left; border: none; background: none; cursor: pointer; color: var(--gray-800); font-size: 0.875rem;">
+              Export PDF
+            </button>
+            <button onclick="exportPDF(true)" style="display: block; width: 100%; padding: 10px 16px; text-align: left; border: none; background: none; cursor: pointer; color: var(--gray-800); font-size: 0.875rem;">
+              Export PDF (with conversations)
+            </button>
+          </div>
+        </div>
+        <button class="btn btn-secondary" onclick="loadLeads()" aria-label="Refresh leads list">Refresh</button>
       </div>
     </div>
   </header>
 
   <div class="container">
-    <div id="auth-section" class="auth-form">
-      <h2>Admin Login</h2>
-      <input type="password" id="admin-key" placeholder="Enter admin key">
-      <button onclick="authenticate()">Access Dashboard</button>
+    <div id="auth-section" class="auth-form" role="form" aria-label="Admin login">
+      <h2 id="login-title">Admin Login</h2>
+      <label for="admin-key" class="sr-only">Admin key</label>
+      <input type="password" id="admin-key" placeholder="Enter admin key" aria-label="Admin key" aria-describedby="login-title">
+      <button onclick="authenticate()" aria-label="Access dashboard">Access Dashboard</button>
     </div>
 
     <div id="dashboard" style="display: none;">
+      <div class="tabs" role="tablist">
+        <button class="tab-btn active" onclick="switchTab('leads')" role="tab" aria-selected="true" aria-controls="leads-tab">Leads</button>
+        <button class="tab-btn" onclick="switchTab('analytics')" role="tab" aria-selected="false" aria-controls="analytics-tab">Analytics</button>
+      </div>
+
+      <div id="leads-tab" class="tab-content active" role="tabpanel">
       <div class="stats" id="stats">
         <div class="stat-card">
           <h3>Total Leads</h3>
@@ -503,13 +1141,15 @@
           <h3>This Week</h3>
           <div class="value" id="week-leads">-</div>
         </div>
-        <div class="stat-card">
-          <h3>Block 1 Interest</h3>
-          <div class="value" id="block1-leads">-</div>
+        <div class="stat-card clickable" onclick="filterHotLeads()">
+          <h3>Hot Leads</h3>
+          <div class="value orange" id="hot-leads">-</div>
+          <div class="sub">Score > 30</div>
         </div>
-        <div class="stat-card">
-          <h3>Block 2 Interest</h3>
-          <div class="value" id="block2-leads">-</div>
+        <div class="stat-card clickable" onclick="filterNeedsFollowup()">
+          <h3>Needs Follow-up</h3>
+          <div class="value red" id="needs-followup">-</div>
+          <div class="sub">New > 3 days</div>
         </div>
         <div class="stat-card">
           <h3>New (Uncontacted)</h3>
@@ -521,16 +1161,19 @@
         </div>
       </div>
 
-      <div class="filters">
-        <input type="text" id="search-input" placeholder="Search by name or email..." onkeyup="debounceSearch()">
-        <select id="status-filter" onchange="loadLeads()">
+      <div class="filters" role="search" aria-label="Filter leads">
+        <label for="search-input" class="sr-only">Search by name or email</label>
+        <input type="text" id="search-input" placeholder="Search by name or email..." onkeyup="debounceSearch()" aria-label="Search leads">
+        <label for="status-filter" class="sr-only">Filter by status</label>
+        <select id="status-filter" onchange="loadLeads()" aria-label="Filter by status">
           <option value="all">All Statuses</option>
           <option value="new">New</option>
           <option value="contacted">Contacted</option>
           <option value="converted">Converted</option>
           <option value="archived">Archived</option>
         </select>
-        <select id="block-filter" onchange="loadLeads()">
+        <label for="block-filter" class="sr-only">Filter by block</label>
+        <select id="block-filter" onchange="loadLeads()" aria-label="Filter by block">
           <option value="all">All Blocks</option>
           <option value="block1">Block 1</option>
           <option value="block2">Block 2</option>
@@ -538,18 +1181,47 @@
           <option value="full">Full 10-Week</option>
           <option value="undecided">Undecided</option>
         </select>
-        <input type="date" id="from-date" onchange="loadLeads()" title="From date">
-        <input type="date" id="to-date" onchange="loadLeads()" title="To date">
-        <button class="btn btn-secondary" onclick="clearFilters()">Clear</button>
+        <label for="tag-filter" class="sr-only">Filter by tag</label>
+        <select id="tag-filter" onchange="loadLeads()" aria-label="Filter by tag">
+          <option value="all">All Tags</option>
+          <option value="follow_up">Follow Up</option>
+          <option value="referred">Referred</option>
+          <option value="needs_discount">Needs Discount</option>
+          <option value="vip">VIP</option>
+          <option value="junior">Junior</option>
+          <option value="returning">Returning</option>
+        </select>
+        <label for="from-date" class="sr-only">From date</label>
+        <input type="date" id="from-date" onchange="loadLeads()" aria-label="From date">
+        <label for="to-date" class="sr-only">To date</label>
+        <input type="date" id="to-date" onchange="loadLeads()" aria-label="To date">
+        <button class="btn btn-secondary" onclick="clearFilters()" aria-label="Clear all filters">Clear</button>
+      </div>
+
+      <div class="bulk-actions" id="bulk-actions">
+        <span class="selected-count"><span id="selected-count">0</span> selected</span>
+        <select id="bulk-status">
+          <option value="">Change status to...</option>
+          <option value="new">New</option>
+          <option value="contacted">Contacted</option>
+          <option value="converted">Converted</option>
+          <option value="archived">Archived</option>
+        </select>
+        <button class="btn-apply" onclick="bulkUpdateStatus()">Apply</button>
+        <button class="btn-delete" onclick="bulkDelete()">Delete Selected</button>
+        <button class="btn-cancel" onclick="clearSelection()">Cancel</button>
       </div>
 
       <div class="leads-table">
         <table>
           <thead>
             <tr>
+              <th style="width: 40px;"><input type="checkbox" id="select-all" onchange="toggleSelectAll()" aria-label="Select all leads"></th>
               <th>Name</th>
               <th>Email</th>
+              <th>Score</th>
               <th>Block</th>
+              <th>Tags</th>
               <th>Status</th>
               <th>Date</th>
               <th>Actions</th>
@@ -557,10 +1229,140 @@
           </thead>
           <tbody id="leads-body">
             <tr>
-              <td colspan="6" class="loading">Loading leads...</td>
+              <td colspan="9" class="loading">Loading leads...</td>
             </tr>
           </tbody>
         </table>
+        <div class="pagination" id="pagination" style="display: none;">
+          <div class="pagination-info" id="pagination-info">
+            Showing 1-25 of 0 leads
+          </div>
+          <div class="pagination-controls">
+            <button class="pagination-btn" id="prev-page" onclick="prevPage()" disabled aria-label="Previous page">
+              &larr; Previous
+            </button>
+            <div class="pagination-pages" id="pagination-pages"></div>
+            <button class="pagination-btn" id="next-page" onclick="nextPage()" disabled aria-label="Next page">
+              Next &rarr;
+            </button>
+          </div>
+        </div>
+      </div>
+      </div>
+
+      <div id="analytics-tab" class="tab-content" role="tabpanel">
+        <div class="analytics-grid">
+          <div class="analytics-card">
+            <h3>Conversion Funnel (Last 30 Days)</h3>
+            <div class="funnel" id="funnel-chart">
+              <div class="funnel-step">
+                <span class="funnel-label">Widget Opens</span>
+                <div class="funnel-bar-container">
+                  <div class="funnel-bar" id="funnel-opens" style="width: 0%"></div>
+                </div>
+                <span class="funnel-value" id="funnel-opens-val">0</span>
+              </div>
+              <div class="funnel-step">
+                <span class="funnel-label">Messages Sent</span>
+                <div class="funnel-bar-container">
+                  <div class="funnel-bar" id="funnel-messages" style="width: 0%"></div>
+                </div>
+                <span class="funnel-value" id="funnel-messages-val">0</span>
+              </div>
+              <div class="funnel-step">
+                <span class="funnel-label">Leads Submitted</span>
+                <div class="funnel-bar-container">
+                  <div class="funnel-bar" id="funnel-leads" style="width: 0%"></div>
+                </div>
+                <span class="funnel-value" id="funnel-leads-val">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="analytics-card">
+            <h3>Conversion Rates</h3>
+            <div class="conversion-rates">
+              <div class="rate-item">
+                <div class="rate-value" id="rate-open-message">0%</div>
+                <div class="rate-label">Open to Message</div>
+              </div>
+              <div class="rate-item">
+                <div class="rate-value" id="rate-message-lead">0%</div>
+                <div class="rate-label">Message to Lead</div>
+              </div>
+              <div class="rate-item">
+                <div class="rate-value" id="rate-overall">0%</div>
+                <div class="rate-label">Overall</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="analytics-card" style="grid-column: 1 / -1;">
+            <h3>Leads by Day (Last 30 Days)</h3>
+            <div class="chart-container" id="leads-chart"></div>
+          </div>
+
+          <div class="analytics-card">
+            <h3>Lead Score Distribution</h3>
+            <div class="distribution-bars" id="score-distribution">
+              <div class="dist-row">
+                <span class="dist-label">Cold (0-15)</span>
+                <div class="dist-bar-container">
+                  <div class="dist-bar cold" id="dist-cold" style="width: 0%"></div>
+                </div>
+                <span class="dist-value" id="dist-cold-val">0</span>
+              </div>
+              <div class="dist-row">
+                <span class="dist-label">Warm (16-30)</span>
+                <div class="dist-bar-container">
+                  <div class="dist-bar warm" id="dist-warm" style="width: 0%"></div>
+                </div>
+                <span class="dist-value" id="dist-warm-val">0</span>
+              </div>
+              <div class="dist-row">
+                <span class="dist-label">Hot (31+)</span>
+                <div class="dist-bar-container">
+                  <div class="dist-bar hot" id="dist-hot" style="width: 0%"></div>
+                </div>
+                <span class="dist-value" id="dist-hot-val">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="analytics-card">
+            <h3>Status Distribution</h3>
+            <div class="distribution-bars" id="status-distribution">
+              <div class="dist-row">
+                <span class="dist-label">New</span>
+                <div class="dist-bar-container">
+                  <div class="dist-bar new" id="dist-new" style="width: 0%"></div>
+                </div>
+                <span class="dist-value" id="dist-new-val">0</span>
+              </div>
+              <div class="dist-row">
+                <span class="dist-label">Contacted</span>
+                <div class="dist-bar-container">
+                  <div class="dist-bar contacted" id="dist-contacted" style="width: 0%"></div>
+                </div>
+                <span class="dist-value" id="dist-contacted-val">0</span>
+              </div>
+              <div class="dist-row">
+                <span class="dist-label">Converted</span>
+                <div class="dist-bar-container">
+                  <div class="dist-bar converted" id="dist-converted" style="width: 0%"></div>
+                </div>
+                <span class="dist-value" id="dist-converted-val">0</span>
+              </div>
+              <div class="dist-row">
+                <span class="dist-label">Archived</span>
+                <div class="dist-bar-container">
+                  <div class="dist-bar archived" id="dist-archived" style="width: 0%"></div>
+                </div>
+                <span class="dist-value" id="dist-archived-val">0</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -606,8 +1408,37 @@
         </div>
 
         <div class="detail-section">
+          <h3>Lead Score</h3>
+          <div id="modal-score">-</div>
+        </div>
+
+        <div class="detail-section">
+          <h3>Tags</h3>
+          <div class="tag-picker" id="modal-tags">
+            <label><input type="checkbox" value="follow_up" onchange="updateLeadTags()"> Follow Up</label>
+            <label><input type="checkbox" value="referred" onchange="updateLeadTags()"> Referred</label>
+            <label><input type="checkbox" value="needs_discount" onchange="updateLeadTags()"> Needs Discount</label>
+            <label><input type="checkbox" value="vip" onchange="updateLeadTags()"> VIP</label>
+            <label><input type="checkbox" value="junior" onchange="updateLeadTags()"> Junior</label>
+            <label><input type="checkbox" value="returning" onchange="updateLeadTags()"> Returning</label>
+          </div>
+        </div>
+
+        <div class="detail-section">
           <h3>Notes</h3>
           <textarea id="modal-notes" class="notes-textarea" placeholder="Add notes about this lead..."></textarea>
+        </div>
+
+        <div class="detail-section" id="ai-summary-section" style="display: none;">
+          <h3 style="display: flex; justify-content: space-between; align-items: center;">
+            <span>AI Summary</span>
+            <button class="btn btn-secondary" onclick="generateSummary()" id="generate-summary-btn" style="font-size: 12px; padding: 4px 12px;">
+              Generate
+            </button>
+          </h3>
+          <div id="ai-summary-content" class="ai-summary">
+            <p class="empty">Click "Generate" to create an AI summary of this conversation.</p>
+          </div>
         </div>
 
         <div class="detail-section" id="conversation-section">
@@ -630,6 +1461,10 @@
     let allLeads = [];
     let currentLead = null;
     let searchTimeout = null;
+    let currentPage = 1;
+    let totalPages = 1;
+    let totalLeads = 0;
+    const PAGE_SIZE = 25;
 
     const BLOCK_LABELS = {
       block1: 'Block 1',
@@ -658,31 +1493,66 @@
       searchTimeout = setTimeout(loadLeads, 300);
     }
 
+    // Selection state
+    let selectedLeads = new Set();
+    let currentFilters = { hot_leads: false, needs_followup: false };
+
     function clearFilters() {
       document.getElementById('search-input').value = '';
       document.getElementById('status-filter').value = 'all';
       document.getElementById('block-filter').value = 'all';
+      document.getElementById('tag-filter').value = 'all';
       document.getElementById('from-date').value = '';
       document.getElementById('to-date').value = '';
+      currentFilters = { hot_leads: false, needs_followup: false };
+
+      // Clear active state on stat cards
+      document.querySelectorAll('.stat-card.active').forEach(card => card.classList.remove('active'));
+
       loadLeads();
     }
 
-    async function loadLeads() {
+    function filterHotLeads() {
+      clearFilters();
+      currentFilters.hot_leads = true;
+      document.querySelector('.stat-card:nth-child(3)')?.classList.add('active');
+      loadLeads();
+    }
+
+    function filterNeedsFollowup() {
+      clearFilters();
+      currentFilters.needs_followup = true;
+      document.querySelector('.stat-card:nth-child(4)')?.classList.add('active');
+      loadLeads();
+    }
+
+    async function loadLeads(resetPage = true) {
       try {
+        // Reset to page 1 when filters change
+        if (resetPage) {
+          currentPage = 1;
+        }
+
         const search = document.getElementById('search-input').value;
         const status = document.getElementById('status-filter').value;
         const block = document.getElementById('block-filter').value;
+        const tag = document.getElementById('tag-filter').value;
         const from = document.getElementById('from-date').value;
         const to = document.getElementById('to-date').value;
 
         const params = new URLSearchParams();
+        params.append('page', currentPage);
+        params.append('limit', PAGE_SIZE);
         if (search) params.append('search', search);
         if (status !== 'all') params.append('status', status);
         if (block !== 'all') params.append('block', block);
+        if (tag !== 'all') params.append('tag', tag);
         if (from) params.append('from', from);
         if (to) params.append('to', to);
+        if (currentFilters.hot_leads) params.append('hot_leads', 'true');
+        if (currentFilters.needs_followup) params.append('needs_followup', 'true');
 
-        const url = `${API_BASE}/api/admin/leads${params.toString() ? '?' + params.toString() : ''}`;
+        const url = `${API_BASE}/api/admin/leads?${params.toString()}`;
 
         const response = await fetch(url, {
           headers: {
@@ -704,6 +1574,15 @@
 
         const data = await response.json();
         allLeads = data.leads;
+
+        // Update pagination state
+        if (data.pagination) {
+          currentPage = data.pagination.page;
+          totalPages = data.pagination.totalPages;
+          totalLeads = data.pagination.total;
+          renderPagination(data.pagination);
+        }
+
         renderLeads(data.leads);
         updateStats(data.stats);
 
@@ -718,18 +1597,41 @@
     function renderLeads(leads) {
       const tbody = document.getElementById('leads-body');
 
+      // Clear selection when rerendering
+      selectedLeads.clear();
+      updateSelectionCount();
+      document.getElementById('select-all').checked = false;
+
       if (!leads || leads.length === 0) {
         tbody.innerHTML = `
-          <tr><td colspan="6" class="empty">No leads found matching your criteria.</td></tr>
+          <tr><td colspan="9" class="empty">No leads found matching your criteria.</td></tr>
         `;
         return;
       }
 
-      tbody.innerHTML = leads.map(lead => `
-        <tr class="clickable" onclick="openLeadModal('${lead.id}')">
+      // Check if lead is stale (new status, created > 3 days ago)
+      const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+
+      tbody.innerHTML = leads.map(lead => {
+        const isStale = lead.status === 'new' && new Date(lead.created_at) < threeDaysAgo;
+        const score = lead.score || 0;
+        const scoreClass = score > 30 ? 'hot' : score > 15 ? 'warm' : 'cold';
+        const tags = lead.tags || [];
+
+        return `
+        <tr class="clickable ${isStale ? 'stale' : ''}" onclick="openLeadModal('${lead.id}')">
+          <td onclick="event.stopPropagation()">
+            <input type="checkbox" onchange="toggleLeadSelection('${lead.id}')" ${selectedLeads.has(lead.id) ? 'checked' : ''}>
+          </td>
           <td><strong>${escapeHtml(lead.name)}</strong></td>
           <td><a href="mailto:${escapeHtml(lead.email)}" onclick="event.stopPropagation()">${escapeHtml(lead.email)}</a></td>
+          <td><span class="score-badge ${scoreClass}">${score}</span></td>
           <td><span class="block-badge">${BLOCK_LABELS[lead.block_preference] || lead.block_preference}</span></td>
+          <td>
+            <div class="tags-container">
+              ${tags.map(tag => `<span class="tag ${tag}">${tag.replace('_', ' ')}</span>`).join('')}
+            </div>
+          </td>
           <td>
             <select class="status-select ${lead.status}" onclick="event.stopPropagation()" onchange="quickUpdateStatus('${lead.id}', this.value)">
               <option value="new" ${lead.status === 'new' ? 'selected' : ''}>New</option>
@@ -748,15 +1650,120 @@
             <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.75rem;" onclick="event.stopPropagation(); openLeadModal('${lead.id}')">View</button>
           </td>
         </tr>
-      `).join('');
+      `}).join('');
+    }
+
+    function toggleLeadSelection(leadId) {
+      if (selectedLeads.has(leadId)) {
+        selectedLeads.delete(leadId);
+      } else {
+        selectedLeads.add(leadId);
+      }
+      updateSelectionCount();
+    }
+
+    function toggleSelectAll() {
+      const selectAll = document.getElementById('select-all');
+      const checkboxes = document.querySelectorAll('#leads-body input[type="checkbox"]');
+
+      if (selectAll.checked) {
+        allLeads.forEach(lead => selectedLeads.add(lead.id));
+        checkboxes.forEach(cb => cb.checked = true);
+      } else {
+        selectedLeads.clear();
+        checkboxes.forEach(cb => cb.checked = false);
+      }
+      updateSelectionCount();
+    }
+
+    function updateSelectionCount() {
+      const count = selectedLeads.size;
+      document.getElementById('selected-count').textContent = count;
+      const bulkActions = document.getElementById('bulk-actions');
+      if (count > 0) {
+        bulkActions.classList.add('visible');
+      } else {
+        bulkActions.classList.remove('visible');
+      }
+    }
+
+    function clearSelection() {
+      selectedLeads.clear();
+      document.getElementById('select-all').checked = false;
+      document.querySelectorAll('#leads-body input[type="checkbox"]').forEach(cb => cb.checked = false);
+      updateSelectionCount();
+    }
+
+    async function bulkUpdateStatus() {
+      const status = document.getElementById('bulk-status').value;
+      if (!status) {
+        alert('Please select a status');
+        return;
+      }
+
+      if (selectedLeads.size === 0) {
+        alert('No leads selected');
+        return;
+      }
+
+      if (!confirm(`Update ${selectedLeads.size} lead(s) to "${status}"?`)) return;
+
+      try {
+        const response = await fetch(`${API_BASE}/api/admin/leads`, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${adminKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            ids: Array.from(selectedLeads),
+            status
+          })
+        });
+
+        if (!response.ok) throw new Error('Failed to update');
+
+        clearSelection();
+        loadLeads();
+      } catch (error) {
+        console.error('Bulk update error:', error);
+        alert('Failed to update leads. Please try again.');
+      }
+    }
+
+    async function bulkDelete() {
+      if (selectedLeads.size === 0) {
+        alert('No leads selected');
+        return;
+      }
+
+      if (!confirm(`Permanently delete ${selectedLeads.size} lead(s)? This cannot be undone.`)) return;
+
+      try {
+        const ids = Array.from(selectedLeads).join(',');
+        const response = await fetch(`${API_BASE}/api/admin/leads?ids=${ids}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${adminKey}`
+          }
+        });
+
+        if (!response.ok) throw new Error('Failed to delete');
+
+        clearSelection();
+        loadLeads();
+      } catch (error) {
+        console.error('Bulk delete error:', error);
+        alert('Failed to delete leads. Please try again.');
+      }
     }
 
     function updateStats(stats) {
       if (!stats) return;
       document.getElementById('total-leads').textContent = stats.total || 0;
       document.getElementById('week-leads').textContent = stats.thisWeek || 0;
-      document.getElementById('block1-leads').textContent = stats.byBlock?.block1 || 0;
-      document.getElementById('block2-leads').textContent = stats.byBlock?.block2 || 0;
+      document.getElementById('hot-leads').textContent = stats.hotLeads || 0;
+      document.getElementById('needs-followup').textContent = stats.needsFollowup || 0;
       document.getElementById('new-leads').textContent = stats.byStatus?.new || 0;
       document.getElementById('conversion-rate').textContent = (stats.conversionRate || 0) + '%';
     }
@@ -805,22 +1812,94 @@
       document.getElementById('modal-status').className = `status-select ${currentLead.status}`;
       document.getElementById('modal-notes').value = currentLead.notes || '';
 
-      // Render conversation
+      // Display score
+      const score = currentLead.score || 0;
+      const scoreClass = score > 30 ? 'hot' : score > 15 ? 'warm' : 'cold';
+      document.getElementById('modal-score').innerHTML = `<span class="score-badge ${scoreClass}">${score}</span>`;
+
+      // Display and set tags
+      const leadTags = currentLead.tags || [];
+      document.querySelectorAll('#modal-tags input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = leadTags.includes(checkbox.value);
+        const label = checkbox.closest('label');
+        if (checkbox.checked) {
+          label.classList.add('selected');
+        } else {
+          label.classList.remove('selected');
+        }
+      });
+
+      // Render conversation with timestamps
       const convContainer = document.getElementById('modal-conversation');
       if (currentLead.conversation_history && currentLead.conversation_history.length > 0) {
-        convContainer.innerHTML = currentLead.conversation_history.map(msg => `
-          <div class="conv-message">
-            <div class="role ${msg.role}">${msg.role === 'user' ? 'Visitor' : 'Bot'}</div>
-            <div class="content">${escapeHtml(msg.content)}</div>
-          </div>
-        `).join('');
+        convContainer.innerHTML = currentLead.conversation_history.map(msg => {
+          const timestamp = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
+          return `
+            <div class="conv-message">
+              <div class="role ${msg.role}">${msg.role === 'user' ? 'Visitor' : 'Bot'}${timestamp ? ` - ${timestamp}` : ''}</div>
+              <div class="content">${escapeHtml(msg.content)}</div>
+            </div>
+          `;
+        }).join('');
         document.getElementById('conversation-section').style.display = 'block';
       } else {
         convContainer.innerHTML = '<p style="color: var(--gray-500); font-size: 0.875rem;">No conversation history available</p>';
         document.getElementById('conversation-section').style.display = 'block';
       }
 
+      // Show AI summary section only if there's conversation history
+      const aiSection = document.getElementById('ai-summary-section');
+      if (currentLead.conversation_history && currentLead.conversation_history.length > 0) {
+        aiSection.style.display = 'block';
+        // Reset summary state
+        document.getElementById('ai-summary-content').innerHTML = '<p class="empty">Click "Generate" to create an AI summary of this conversation.</p>';
+        document.getElementById('generate-summary-btn').textContent = 'Generate';
+        document.getElementById('generate-summary-btn').disabled = false;
+      } else {
+        aiSection.style.display = 'none';
+      }
+
       document.getElementById('lead-modal').classList.add('open');
+    }
+
+    async function updateLeadTags() {
+      if (!currentLead) return;
+
+      const tags = [];
+      document.querySelectorAll('#modal-tags input[type="checkbox"]:checked').forEach(checkbox => {
+        tags.push(checkbox.value);
+        checkbox.closest('label').classList.add('selected');
+      });
+      document.querySelectorAll('#modal-tags input[type="checkbox"]:not(:checked)').forEach(checkbox => {
+        checkbox.closest('label').classList.remove('selected');
+      });
+
+      try {
+        const response = await fetch(`${API_BASE}/api/admin/leads`, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${adminKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ id: currentLead.id, tags })
+        });
+
+        if (!response.ok) throw new Error('Failed to update');
+
+        // Update local state
+        currentLead.tags = tags;
+        const leadIndex = allLeads.findIndex(l => l.id === currentLead.id);
+        if (leadIndex >= 0) {
+          allLeads[leadIndex].tags = tags;
+        }
+
+        // Refresh table
+        renderLeads(allLeads);
+
+      } catch (error) {
+        console.error('Error updating tags:', error);
+        alert('Failed to update tags. Please try again.');
+      }
     }
 
     function closeModal() {
@@ -869,21 +1948,56 @@
       }
     }
 
-    function exportCSV() {
+    function toggleExportMenu() {
+      const menu = document.getElementById('export-menu');
+      menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // Close export menu when clicking outside
+    document.addEventListener('click', (e) => {
+      const dropdown = document.querySelector('.export-dropdown');
+      const menu = document.getElementById('export-menu');
+      if (dropdown && menu && !dropdown.contains(e.target)) {
+        menu.style.display = 'none';
+      }
+    });
+
+    function formatConversation(history) {
+      if (!history || history.length === 0) return 'No conversation';
+      return history.map(msg => {
+        const role = msg.role === 'user' ? 'Visitor' : 'Bot';
+        return `${role}: ${msg.content}`;
+      }).join(' | ');
+    }
+
+    function exportCSV(includeConversations = false) {
+      document.getElementById('export-menu').style.display = 'none';
+
       if (!allLeads || allLeads.length === 0) {
         alert('No leads to export');
         return;
       }
 
-      const headers = ['Name', 'Email', 'Block Preference', 'Status', 'Notes', 'Date'];
-      const rows = allLeads.map(lead => [
-        lead.name,
-        lead.email,
-        BLOCK_LABELS[lead.block_preference] || lead.block_preference,
-        lead.status,
-        (lead.notes || '').replace(/"/g, '""'),
-        new Date(lead.created_at).toLocaleString()
-      ]);
+      const headers = includeConversations
+        ? ['Name', 'Email', 'Block Preference', 'Status', 'Score', 'Tags', 'Notes', 'Date', 'Conversation']
+        : ['Name', 'Email', 'Block Preference', 'Status', 'Score', 'Tags', 'Notes', 'Date'];
+
+      const rows = allLeads.map(lead => {
+        const baseRow = [
+          lead.name,
+          lead.email,
+          BLOCK_LABELS[lead.block_preference] || lead.block_preference,
+          lead.status,
+          lead.score || 0,
+          (lead.tags || []).join('; '),
+          (lead.notes || '').replace(/"/g, '""'),
+          new Date(lead.created_at).toLocaleString()
+        ];
+        if (includeConversations) {
+          baseRow.push(formatConversation(lead.conversation_history).replace(/"/g, '""'));
+        }
+        return baseRow;
+      });
 
       const csvContent = [
         headers.join(','),
@@ -893,8 +2007,215 @@
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = `landings-leads-${new Date().toISOString().split('T')[0]}.csv`;
+      const suffix = includeConversations ? '-with-conversations' : '';
+      link.download = `landings-leads${suffix}-${new Date().toISOString().split('T')[0]}.csv`;
       link.click();
+    }
+
+    function exportPDF(includeConversations = false) {
+      document.getElementById('export-menu').style.display = 'none';
+
+      if (!allLeads || allLeads.length === 0) {
+        alert('No leads to export');
+        return;
+      }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      // Title
+      doc.setFontSize(18);
+      doc.setTextColor(14, 42, 66); // Navy
+      doc.text('The Landings - Lead Report', 14, 20);
+
+      // Subtitle
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(`Winter Instructional Program 2026 | Generated: ${new Date().toLocaleString()}`, 14, 28);
+      doc.text(`Total Leads: ${allLeads.length}`, 14, 34);
+
+      // Stats summary
+      const stats = {
+        new: allLeads.filter(l => l.status === 'new').length,
+        contacted: allLeads.filter(l => l.status === 'contacted').length,
+        converted: allLeads.filter(l => l.status === 'converted').length,
+        archived: allLeads.filter(l => l.status === 'archived').length
+      };
+      doc.text(`New: ${stats.new} | Contacted: ${stats.contacted} | Converted: ${stats.converted} | Archived: ${stats.archived}`, 14, 40);
+
+      if (!includeConversations) {
+        // Simple table without conversations
+        const tableData = allLeads.map(lead => [
+          lead.name,
+          lead.email,
+          BLOCK_LABELS[lead.block_preference] || lead.block_preference,
+          lead.status,
+          lead.score || 0,
+          (lead.tags || []).join(', '),
+          new Date(lead.created_at).toLocaleDateString()
+        ]);
+
+        doc.autoTable({
+          startY: 48,
+          head: [['Name', 'Email', 'Block', 'Status', 'Score', 'Tags', 'Date']],
+          body: tableData,
+          styles: { fontSize: 8, cellPadding: 2 },
+          headStyles: { fillColor: [14, 42, 66], textColor: 255 },
+          alternateRowStyles: { fillColor: [245, 245, 245] }
+        });
+      } else {
+        // Detailed report with conversations
+        let yPosition = 48;
+
+        allLeads.forEach((lead, index) => {
+          // Check if we need a new page
+          if (yPosition > 250) {
+            doc.addPage();
+            yPosition = 20;
+          }
+
+          // Lead header
+          doc.setFontSize(11);
+          doc.setTextColor(14, 42, 66);
+          doc.text(`${index + 1}. ${lead.name}`, 14, yPosition);
+          yPosition += 5;
+
+          // Lead details
+          doc.setFontSize(9);
+          doc.setTextColor(60);
+          doc.text(`Email: ${lead.email} | Block: ${BLOCK_LABELS[lead.block_preference] || lead.block_preference}`, 14, yPosition);
+          yPosition += 4;
+          doc.text(`Status: ${lead.status} | Score: ${lead.score || 0} | Tags: ${(lead.tags || []).join(', ') || 'None'}`, 14, yPosition);
+          yPosition += 4;
+          doc.text(`Date: ${new Date(lead.created_at).toLocaleString()}`, 14, yPosition);
+          yPosition += 4;
+
+          if (lead.notes) {
+            doc.setTextColor(80);
+            const notesLines = doc.splitTextToSize(`Notes: ${lead.notes}`, 180);
+            notesLines.forEach(line => {
+              if (yPosition > 280) { doc.addPage(); yPosition = 20; }
+              doc.text(line, 14, yPosition);
+              yPosition += 4;
+            });
+          }
+
+          // Conversation history
+          if (lead.conversation_history && lead.conversation_history.length > 0) {
+            yPosition += 2;
+            doc.setFontSize(8);
+            doc.setTextColor(100);
+            doc.text('Conversation:', 14, yPosition);
+            yPosition += 4;
+
+            lead.conversation_history.forEach(msg => {
+              if (yPosition > 280) { doc.addPage(); yPosition = 20; }
+              const role = msg.role === 'user' ? 'Visitor' : 'Bot';
+              const msgLines = doc.splitTextToSize(`${role}: ${msg.content}`, 175);
+              msgLines.forEach(line => {
+                if (yPosition > 280) { doc.addPage(); yPosition = 20; }
+                doc.text(line, 18, yPosition);
+                yPosition += 3.5;
+              });
+            });
+          }
+
+          yPosition += 8; // Space between leads
+
+          // Draw separator line
+          if (index < allLeads.length - 1) {
+            doc.setDrawColor(200);
+            doc.line(14, yPosition - 4, 196, yPosition - 4);
+          }
+        });
+      }
+
+      const suffix = includeConversations ? '-detailed' : '';
+      doc.save(`landings-leads${suffix}-${new Date().toISOString().split('T')[0]}.pdf`);
+    }
+
+    // Pagination functions
+    function renderPagination(pagination) {
+      const paginationEl = document.getElementById('pagination');
+      const infoEl = document.getElementById('pagination-info');
+      const pagesEl = document.getElementById('pagination-pages');
+      const prevBtn = document.getElementById('prev-page');
+      const nextBtn = document.getElementById('next-page');
+
+      if (!pagination || pagination.total === 0) {
+        paginationEl.style.display = 'none';
+        return;
+      }
+
+      paginationEl.style.display = 'flex';
+
+      // Update info text
+      const start = (pagination.page - 1) * pagination.limit + 1;
+      const end = Math.min(pagination.page * pagination.limit, pagination.total);
+      infoEl.textContent = `Showing ${start}-${end} of ${pagination.total} leads`;
+
+      // Update buttons
+      prevBtn.disabled = !pagination.hasPrev;
+      nextBtn.disabled = !pagination.hasNext;
+
+      // Render page numbers
+      pagesEl.innerHTML = '';
+      const pages = getVisiblePages(pagination.page, pagination.totalPages);
+
+      pages.forEach((page, i) => {
+        if (page === '...') {
+          const ellipsis = document.createElement('span');
+          ellipsis.className = 'pagination-ellipsis';
+          ellipsis.textContent = '...';
+          pagesEl.appendChild(ellipsis);
+        } else {
+          const btn = document.createElement('button');
+          btn.className = `pagination-page ${page === pagination.page ? 'active' : ''}`;
+          btn.textContent = page;
+          btn.onclick = () => goToPage(page);
+          btn.setAttribute('aria-label', `Go to page ${page}`);
+          if (page === pagination.page) {
+            btn.setAttribute('aria-current', 'page');
+          }
+          pagesEl.appendChild(btn);
+        }
+      });
+    }
+
+    function getVisiblePages(current, total) {
+      if (total <= 7) {
+        return Array.from({ length: total }, (_, i) => i + 1);
+      }
+
+      if (current <= 4) {
+        return [1, 2, 3, 4, 5, '...', total];
+      }
+
+      if (current >= total - 3) {
+        return [1, '...', total - 4, total - 3, total - 2, total - 1, total];
+      }
+
+      return [1, '...', current - 1, current, current + 1, '...', total];
+    }
+
+    function goToPage(page) {
+      if (page < 1 || page > totalPages || page === currentPage) return;
+      currentPage = page;
+      loadLeads(false);
+    }
+
+    function prevPage() {
+      if (currentPage > 1) {
+        currentPage--;
+        loadLeads(false);
+      }
+    }
+
+    function nextPage() {
+      if (currentPage < totalPages) {
+        currentPage++;
+        loadLeads(false);
+      }
     }
 
     function escapeHtml(text) {
@@ -903,6 +2224,224 @@
       div.textContent = text;
       return div.innerHTML;
     }
+
+    // Tab switching
+    let analyticsLoaded = false;
+
+    function switchTab(tab) {
+      // Update tab buttons
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-selected', 'false');
+      });
+      event.target.classList.add('active');
+      event.target.setAttribute('aria-selected', 'true');
+
+      // Update tab content
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      document.getElementById(`${tab}-tab`).classList.add('active');
+
+      // Load analytics on first view
+      if (tab === 'analytics' && !analyticsLoaded) {
+        loadAnalytics();
+      }
+    }
+
+    // Analytics functions
+    async function loadAnalytics() {
+      try {
+        const response = await fetch(`${API_BASE}/api/admin/analytics`, {
+          headers: {
+            'Authorization': `Bearer ${adminKey}`
+          }
+        });
+
+        if (!response.ok) throw new Error('Failed to fetch analytics');
+
+        const data = await response.json();
+        if (data.success) {
+          renderAnalytics(data.analytics);
+          analyticsLoaded = true;
+        }
+      } catch (error) {
+        console.error('Analytics error:', error);
+      }
+    }
+
+    function renderAnalytics(analytics) {
+      // Render funnel
+      const maxFunnel = Math.max(
+        analytics.funnel.widgetOpens,
+        analytics.funnel.messagesSent,
+        analytics.funnel.leadsSubmitted,
+        1
+      );
+
+      document.getElementById('funnel-opens').style.width = `${(analytics.funnel.widgetOpens / maxFunnel) * 100}%`;
+      document.getElementById('funnel-opens-val').textContent = analytics.funnel.widgetOpens;
+
+      document.getElementById('funnel-messages').style.width = `${(analytics.funnel.messagesSent / maxFunnel) * 100}%`;
+      document.getElementById('funnel-messages-val').textContent = analytics.funnel.messagesSent;
+
+      document.getElementById('funnel-leads').style.width = `${(analytics.funnel.leadsSubmitted / maxFunnel) * 100}%`;
+      document.getElementById('funnel-leads-val').textContent = analytics.funnel.leadsSubmitted;
+
+      // Render conversion rates
+      document.getElementById('rate-open-message').textContent = `${analytics.conversionRates.openToMessage}%`;
+      document.getElementById('rate-message-lead').textContent = `${analytics.conversionRates.messageToLead}%`;
+      document.getElementById('rate-overall').textContent = `${analytics.conversionRates.overall}%`;
+
+      // Render chart
+      const chartContainer = document.getElementById('leads-chart');
+      chartContainer.innerHTML = '';
+      const maxChart = Math.max(...analytics.chart.data, 1);
+
+      analytics.chart.labels.forEach((label, i) => {
+        const value = analytics.chart.data[i];
+        const height = (value / maxChart) * 160;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'chart-bar-wrapper';
+        wrapper.innerHTML = `
+          <div class="chart-bar" style="height: ${height}px" title="${label}: ${value} leads"></div>
+          ${i % 5 === 0 ? `<span class="chart-label">${label}</span>` : ''}
+        `;
+        chartContainer.appendChild(wrapper);
+      });
+
+      // Render score distribution
+      const totalScore = analytics.scoreDistribution.cold + analytics.scoreDistribution.warm + analytics.scoreDistribution.hot || 1;
+
+      document.getElementById('dist-cold').style.width = `${(analytics.scoreDistribution.cold / totalScore) * 100}%`;
+      document.getElementById('dist-cold-val').textContent = analytics.scoreDistribution.cold;
+
+      document.getElementById('dist-warm').style.width = `${(analytics.scoreDistribution.warm / totalScore) * 100}%`;
+      document.getElementById('dist-warm-val').textContent = analytics.scoreDistribution.warm;
+
+      document.getElementById('dist-hot').style.width = `${(analytics.scoreDistribution.hot / totalScore) * 100}%`;
+      document.getElementById('dist-hot-val').textContent = analytics.scoreDistribution.hot;
+
+      // Render status distribution
+      const totalStatus = analytics.statusDistribution.new + analytics.statusDistribution.contacted +
+        analytics.statusDistribution.converted + analytics.statusDistribution.archived || 1;
+
+      document.getElementById('dist-new').style.width = `${(analytics.statusDistribution.new / totalStatus) * 100}%`;
+      document.getElementById('dist-new-val').textContent = analytics.statusDistribution.new;
+
+      document.getElementById('dist-contacted').style.width = `${(analytics.statusDistribution.contacted / totalStatus) * 100}%`;
+      document.getElementById('dist-contacted-val').textContent = analytics.statusDistribution.contacted;
+
+      document.getElementById('dist-converted').style.width = `${(analytics.statusDistribution.converted / totalStatus) * 100}%`;
+      document.getElementById('dist-converted-val').textContent = analytics.statusDistribution.converted;
+
+      document.getElementById('dist-archived').style.width = `${(analytics.statusDistribution.archived / totalStatus) * 100}%`;
+      document.getElementById('dist-archived-val').textContent = analytics.statusDistribution.archived;
+    }
+
+    // AI Summary generation
+    const summaryCache = {};
+
+    async function generateSummary() {
+      if (!currentLead) return;
+
+      const btn = document.getElementById('generate-summary-btn');
+      const content = document.getElementById('ai-summary-content');
+
+      // Check local cache first
+      if (summaryCache[currentLead.id]) {
+        renderSummary(summaryCache[currentLead.id]);
+        return;
+      }
+
+      // Show loading state
+      btn.disabled = true;
+      btn.textContent = 'Generating...';
+      content.classList.add('loading');
+      content.innerHTML = '<p>Analyzing conversation...</p>';
+
+      try {
+        const response = await fetch(`${API_BASE}/api/admin/leads`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${adminKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            action: 'summarize',
+            leadId: currentLead.id
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.summary) {
+          summaryCache[currentLead.id] = data.summary;
+          renderSummary(data.summary);
+        } else {
+          throw new Error(data.error || 'Failed to generate summary');
+        }
+      } catch (error) {
+        console.error('Summary error:', error);
+        content.classList.remove('loading');
+        content.innerHTML = `<p class="empty" style="color: #dc2626;">Error: ${error.message}</p>`;
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Regenerate';
+    }
+
+    function renderSummary(summary) {
+      const content = document.getElementById('ai-summary-content');
+      content.classList.remove('loading');
+
+      const sentimentEmoji = {
+        positive: '😊',
+        neutral: '😐',
+        negative: '😟'
+      };
+
+      const topicsHtml = summary.topics && summary.topics.length > 0
+        ? `<div class="summary-topics">${summary.topics.map(t => `<span class="topic-tag">${escapeHtml(t)}</span>`).join('')}</div>`
+        : '';
+
+      content.innerHTML = `
+        <p class="summary-text">${escapeHtml(summary.summary)}</p>
+        ${topicsHtml}
+        <span class="sentiment ${summary.sentiment}">
+          ${sentimentEmoji[summary.sentiment] || ''} Sentiment: ${summary.sentiment}
+        </span>
+      `;
+    }
+
+    // Dark mode functions
+    function toggleDarkMode() {
+      const html = document.documentElement;
+      const isDark = html.getAttribute('data-theme') === 'dark';
+
+      if (isDark) {
+        html.removeAttribute('data-theme');
+        localStorage.setItem('landingsTheme', 'light');
+      } else {
+        html.setAttribute('data-theme', 'dark');
+        localStorage.setItem('landingsTheme', 'dark');
+      }
+    }
+
+    // Load saved theme preference
+    function loadThemePreference() {
+      const savedTheme = localStorage.getItem('landingsTheme');
+      if (savedTheme === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      } else if (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        // Follow system preference if no saved preference
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    }
+
+    // Load theme immediately
+    loadThemePreference();
 
     // Check for stored key
     const storedKey = sessionStorage.getItem('landingsAdminKey');
@@ -914,10 +2453,93 @@
       loadLeads();
     }
 
-    // Close modal on escape key
+    // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') closeModal();
+      // Escape - close modal
+      if (e.key === 'Escape') {
+        closeModal();
+        return;
+      }
+
+      // Don't trigger shortcuts when typing in inputs
+      const activeEl = document.activeElement;
+      const isTyping = activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT';
+
+      // Ctrl+S / Cmd+S - save notes (when modal is open)
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        if (currentLead && document.getElementById('lead-modal').classList.contains('open')) {
+          e.preventDefault();
+          saveNotes();
+          return;
+        }
+      }
+
+      // Ctrl+A / Cmd+A - select all leads (when not typing)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a' && !isTyping) {
+        e.preventDefault();
+        const selectAll = document.getElementById('select-all');
+        if (selectAll && !selectAll.checked) {
+          selectAll.checked = true;
+          toggleSelectAll();
+        }
+        return;
+      }
+
+      // ? - show keyboard shortcuts help
+      if (e.key === '?' && !isTyping) {
+        showShortcutsHelp();
+        return;
+      }
     });
+
+    // Show keyboard shortcuts help
+    function showShortcutsHelp() {
+      const existing = document.getElementById('shortcuts-modal');
+      if (existing) {
+        existing.remove();
+        return;
+      }
+
+      const modal = document.createElement('div');
+      modal.id = 'shortcuts-modal';
+      modal.style.cssText = `
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+      `;
+      modal.innerHTML = `
+        <div style="background: white; padding: 32px; border-radius: 16px; max-width: 400px; width: 90%;">
+          <h3 style="margin: 0 0 20px; color: var(--navy-800); font-family: var(--font-heading);">Keyboard Shortcuts</h3>
+          <div style="display: grid; gap: 12px;">
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--gray-100);">
+              <span style="color: var(--gray-700);">Close modal</span>
+              <kbd style="background: var(--gray-100); padding: 4px 8px; border-radius: 4px; font-family: monospace; font-size: 12px;">Esc</kbd>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--gray-100);">
+              <span style="color: var(--gray-700);">Save notes</span>
+              <kbd style="background: var(--gray-100); padding: 4px 8px; border-radius: 4px; font-family: monospace; font-size: 12px;">Ctrl+S</kbd>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--gray-100);">
+              <span style="color: var(--gray-700);">Select all leads</span>
+              <kbd style="background: var(--gray-100); padding: 4px 8px; border-radius: 4px; font-family: monospace; font-size: 12px;">Ctrl+A</kbd>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+              <span style="color: var(--gray-700);">Show this help</span>
+              <kbd style="background: var(--gray-100); padding: 4px 8px; border-radius: 4px; font-family: monospace; font-size: 12px;">?</kbd>
+            </div>
+          </div>
+          <button onclick="this.closest('#shortcuts-modal').remove()" style="margin-top: 24px; width: 100%; padding: 12px; background: var(--navy-800); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">Close</button>
+        </div>
+      `;
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.remove();
+      });
+      document.body.appendChild(modal);
+    }
 
     // Close modal on overlay click
     document.getElementById('lead-modal').addEventListener('click', (e) => {

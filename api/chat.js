@@ -1,3 +1,5 @@
+import { rateLimit, getClientIP } from '../lib/rateLimit.js';
+
 const SYSTEM_PROMPT = `You are the digital assistant for The Landings Golf Course in Kingston, Ontario — Kingston's premier instructional experience. You help visitors learn about the 2026 Indoor Winter Golf School and guide them toward registration.
 
 ## About The Landings
@@ -98,6 +100,72 @@ const REGISTRATION_KEYWORDS = [
   'enroll', 'book', 'reserve', 'spot', 'count me in', 'i want to', "i'd like to"
 ];
 
+// Lead scoring keywords
+const SCORING_KEYWORDS = {
+  pricing: { keywords: ['price', 'cost', 'how much', 'fee', 'payment', 'pay', 'afford', '$'], score: 5 },
+  instructors: { keywords: ['instructor', 'teacher', 'coach', 'professional', 'pro', 'chris', 'michael', 'maddy'], score: 10 },
+  signup: { keywords: ['sign up', 'signup', 'register', 'join', 'enroll', 'book', 'reserve', 'spot', 'interested'], score: 15 },
+  dates: { keywords: ['when', 'date', 'schedule', 'start', 'january', 'february', 'march', 'block 1', 'block 2'], score: 5 },
+  comparison: { keywords: ['compare', 'difference', 'better', 'which', 'recommend'], score: 8 },
+  facilities: { keywords: ['facility', 'simulator', 'foresight', 'launch monitor', 'equipment'], score: 5 },
+  urgency: { keywords: ['available', 'spots left', 'full', 'hurry', 'soon', 'deadline'], score: 10 }
+};
+
+// Calculate score for a message
+function calculateMessageScore(message) {
+  const messageLower = message.toLowerCase();
+  let score = 0;
+
+  for (const category of Object.values(SCORING_KEYWORDS)) {
+    for (const keyword of category.keywords) {
+      if (messageLower.includes(keyword)) {
+        score += category.score;
+        break; // Only count each category once per message
+      }
+    }
+  }
+
+  return score;
+}
+
+// Calculate total conversation score
+function calculateConversationScore(messages) {
+  let totalScore = 0;
+  for (const msg of messages) {
+    if (msg.role === 'user') {
+      totalScore += calculateMessageScore(msg.content);
+    }
+  }
+  return totalScore;
+}
+
+// Fetch with retry logic
+async function fetchWithRetry(url, options, maxRetries = 3) {
+  let lastError;
+
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const response = await fetch(url, options);
+
+      // Don't retry on client errors (4xx), only server errors (5xx)
+      if (response.ok || (response.status >= 400 && response.status < 500)) {
+        return response;
+      }
+
+      lastError = new Error(`HTTP ${response.status}`);
+    } catch (error) {
+      lastError = error;
+    }
+
+    // Exponential backoff: 1s, 2s, 4s
+    if (i < maxRetries - 1) {
+      await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+    }
+  }
+
+  throw lastError;
+}
+
 export default async function handler(req, res) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -112,8 +180,13 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Rate limit: 10 messages per minute per IP
+  if (!rateLimit(req, res, 'chat', 10)) {
+    return;
+  }
+
   try {
-    const { message, history = [] } = req.body;
+    const { message, history = [], conversationId } = req.body;
 
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });
@@ -131,8 +204,8 @@ export default async function handler(req, res) {
       { role: 'user', content: message }
     ];
 
-    // Use fetch directly instead of OpenAI library
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Use fetch with retry logic
+    const response = await fetchWithRetry('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -160,16 +233,21 @@ export default async function handler(req, res) {
       userMessageLower.includes(keyword)
     );
 
+    // Calculate conversation score for analytics
+    const allMessages = [...history, { role: 'user', content: message }];
+    const conversationScore = calculateConversationScore(allMessages);
+
     return res.status(200).json({
       message: reply,
-      showLeadForm
+      showLeadForm,
+      score: conversationScore
     });
 
   } catch (error) {
     console.error('OpenAI API error:', error);
     return res.status(500).json({
       error: 'Failed to process message',
-      details: error.message
+      details: process.env.NODE_ENV === 'development' ? error.message : 'An error occurred'
     });
   }
 }
