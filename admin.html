@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - The Landings Leads</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #1a472a, #2d5a3d);
+      color: white;
+      padding: 24px;
+    }
+
+    .header h1 {
+      font-size: 1.5rem;
+      margin-bottom: 4px;
+    }
+
+    .header p {
+      opacity: 0.9;
+      font-size: 0.9rem;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .auth-form {
+      max-width: 400px;
+      margin: 60px auto;
+      background: white;
+      padding: 32px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .auth-form h2 {
+      color: #1a472a;
+      margin-bottom: 24px;
+    }
+
+    .auth-form input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 1rem;
+      margin-bottom: 16px;
+    }
+
+    .auth-form button {
+      width: 100%;
+      padding: 12px;
+      background: #1a472a;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .auth-form button:hover {
+      background: #2d5a3d;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .stat-card h3 {
+      color: #666;
+      font-size: 0.875rem;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    .stat-card .value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #1a472a;
+    }
+
+    .leads-table {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .leads-table table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .leads-table th {
+      background: #f8faf9;
+      padding: 16px;
+      text-align: left;
+      font-weight: 600;
+      color: #1a472a;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .leads-table td {
+      padding: 16px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .leads-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .leads-table tr:hover {
+      background: #f8faf9;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status-new {
+      background: #e0f2e9;
+      color: #1a472a;
+    }
+
+    .status-contacted {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .status-converted {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .block-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      background: #f0f4f1;
+      border-radius: 4px;
+      font-size: 0.875rem;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 60px;
+      color: #666;
+    }
+
+    .error {
+      text-align: center;
+      padding: 60px;
+      color: #dc2626;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 60px;
+      color: #666;
+    }
+
+    @media (max-width: 768px) {
+      .leads-table {
+        overflow-x: auto;
+      }
+
+      .leads-table table {
+        min-width: 600px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <h1>The Landings - Lead Dashboard</h1>
+    <p>Winter Instructional Program 2026</p>
+  </header>
+
+  <div class="container">
+    <div id="auth-section" class="auth-form">
+      <h2>Admin Login</h2>
+      <input type="password" id="admin-key" placeholder="Enter admin key">
+      <button onclick="authenticate()">Access Dashboard</button>
+    </div>
+
+    <div id="dashboard" style="display: none;">
+      <div class="stats" id="stats">
+        <div class="stat-card">
+          <h3>Total Leads</h3>
+          <div class="value" id="total-leads">-</div>
+        </div>
+        <div class="stat-card">
+          <h3>Block 1 Interest</h3>
+          <div class="value" id="block1-leads">-</div>
+        </div>
+        <div class="stat-card">
+          <h3>Block 2 Interest</h3>
+          <div class="value" id="block2-leads">-</div>
+        </div>
+        <div class="stat-card">
+          <h3>New (Uncontacted)</h3>
+          <div class="value" id="new-leads">-</div>
+        </div>
+      </div>
+
+      <div class="leads-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Block</th>
+              <th>Status</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="leads-body">
+            <tr>
+              <td colspan="5" class="loading">Loading leads...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin;
+    let adminKey = '';
+
+    const BLOCK_LABELS = {
+      block1: 'Block 1',
+      block2: 'Block 2',
+      both: 'Both',
+      undecided: 'Undecided'
+    };
+
+    function authenticate() {
+      adminKey = document.getElementById('admin-key').value;
+      if (!adminKey) {
+        alert('Please enter the admin key');
+        return;
+      }
+
+      document.getElementById('auth-section').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      loadLeads();
+    }
+
+    async function loadLeads() {
+      try {
+        const response = await fetch(`${API_BASE}/api/admin/leads`, {
+          headers: {
+            'Authorization': `Bearer ${adminKey}`
+          }
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            alert('Invalid admin key');
+            document.getElementById('auth-section').style.display = 'block';
+            document.getElementById('dashboard').style.display = 'none';
+            return;
+          }
+          throw new Error('Failed to fetch leads');
+        }
+
+        const data = await response.json();
+        renderLeads(data.leads);
+        updateStats(data.leads);
+
+      } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('leads-body').innerHTML = `
+          <tr><td colspan="5" class="error">Failed to load leads. Please try again.</td></tr>
+        `;
+      }
+    }
+
+    function renderLeads(leads) {
+      const tbody = document.getElementById('leads-body');
+
+      if (!leads || leads.length === 0) {
+        tbody.innerHTML = `
+          <tr><td colspan="5" class="empty">No leads yet. Share the chatbot to start collecting leads!</td></tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = leads.map(lead => `
+        <tr>
+          <td><strong>${escapeHtml(lead.name)}</strong></td>
+          <td><a href="mailto:${escapeHtml(lead.email)}">${escapeHtml(lead.email)}</a></td>
+          <td><span class="block-badge">${BLOCK_LABELS[lead.block_preference] || lead.block_preference}</span></td>
+          <td><span class="status-badge status-${lead.status}">${lead.status}</span></td>
+          <td>${new Date(lead.created_at).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })}</td>
+        </tr>
+      `).join('');
+    }
+
+    function updateStats(leads) {
+      document.getElementById('total-leads').textContent = leads.length;
+      document.getElementById('block1-leads').textContent = leads.filter(l =>
+        l.block_preference === 'block1' || l.block_preference === 'both'
+      ).length;
+      document.getElementById('block2-leads').textContent = leads.filter(l =>
+        l.block_preference === 'block2' || l.block_preference === 'both'
+      ).length;
+      document.getElementById('new-leads').textContent = leads.filter(l =>
+        l.status === 'new'
+      ).length;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Check for stored key
+    const storedKey = sessionStorage.getItem('landingsAdminKey');
+    if (storedKey) {
+      adminKey = storedKey;
+      document.getElementById('auth-section').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      loadLeads();
+    }
+  </script>
+</body>
+</html>

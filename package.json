@@ -1,0 +1,21 @@
+{
+  "name": "landings-digital-front-desk",
+  "version": "1.0.0",
+  "description": "Lead-generation chatbot for The Landings Golf Course Winter Instructional Program",
+  "main": "api/chat.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "openai": "^4.24.0",
+    "resend": "^2.1.0"
+  },
+  "devDependencies": {
+    "vercel": "^33.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
