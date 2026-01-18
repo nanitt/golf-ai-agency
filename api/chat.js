@@ -1,5 +1,3 @@
-import OpenAI from 'openai';
-
 const SYSTEM_PROMPT = `You are a friendly and helpful assistant for The Landings Golf Course in Kingston, Ontario. You help visitors learn about the 2026 Indoor Winter Instructional Program and guide them toward registration.
 
 ## Program Details
@@ -60,13 +58,6 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Message is required' });
     }
 
-    // Initialize OpenAI client at runtime to ensure env vars are available
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-      timeout: 30000, // 30 second timeout
-      maxRetries: 2
-    });
-
     // Build conversation history for OpenAI
     const messages = [
       { role: 'system', content: SYSTEM_PROMPT },
@@ -77,13 +68,27 @@ export default async function handler(req, res) {
       { role: 'user', content: message }
     ];
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages,
-      max_tokens: 300,
-      temperature: 0.7
+    // Use fetch directly instead of OpenAI library
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages,
+        max_tokens: 300,
+        temperature: 0.7
+      })
     });
 
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(`OpenAI API error: ${response.status} - ${errorData}`);
+    }
+
+    const completion = await response.json();
     const reply = completion.choices[0].message.content;
 
     // Check if we should show the lead form
@@ -101,10 +106,7 @@ export default async function handler(req, res) {
     console.error('OpenAI API error:', error);
     return res.status(500).json({
       error: 'Failed to process message',
-      details: error.message,
-      errorType: error.constructor.name,
-      hasApiKey: !!process.env.OPENAI_API_KEY,
-      keyPrefix: process.env.OPENAI_API_KEY?.substring(0, 10)
+      details: error.message
     });
   }
 }
