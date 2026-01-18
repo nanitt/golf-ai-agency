@@ -99,7 +99,8 @@ export default async function handler(req, res) {
     console.error('OpenAI API error:', error);
     return res.status(500).json({
       error: 'Failed to process message',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details: error.message,
+      hasApiKey: !!process.env.OPENAI_API_KEY
     });
   }
 }
